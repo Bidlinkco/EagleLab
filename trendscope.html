@@ -1,0 +1,2962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrendScope • X Hashtag &amp; Cashtag Analytics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=Space+Grotesk:wght@500;600&amp;display=swap');
+        
+        :root {
+            --accent: #22d3ee;
+        }
+        
+        body {
+            font-family: 'Inter', system_ui, sans-serif;
+        }
+        
+        .font-display {
+            font-family: 'Space Grotesk', 'Inter', sans-serif;
+            font-weight: 600;
+        }
+
+        .glass {
+            background: rgba(24, 24, 27, 0.85);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(63, 63, 70, 0.5);
+        }
+
+        .section-header {
+            font-size: 1.75rem;
+            line-height: 1.1;
+            font-weight: 700;
+            letter-spacing: -.025em;
+        }
+
+        .metric-value {
+            font-variant-numeric: tabular-nums;
+        }
+
+        .tweet-text {
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
+        .modern-card {
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), 
+                       box-shadow 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+        
+        .modern-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        }
+
+        .nav-item {
+            transition: all 0.1s ease;
+        }
+        
+        .nav-item.active {
+            background-color: rgb(39 39 42);
+            color: white;
+            border-radius: 8px;
+        }
+
+        .leaderboard-row {
+            transition: background-color 0.1s ease;
+        }
+        
+        .leaderboard-row:hover {
+            background-color: rgb(39 39 42 / 0.6);
+        }
+
+        .stat-card {
+            transition: transform 0.2s ease;
+        }
+
+        .premium-gradient {
+            background: linear-gradient(135deg, #22d3ee, #6366f1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .trend-up {
+            color: #4ade80;
+        }
+        
+        .trend-down {
+            color: #f87171;
+        }
+
+        .x-dark {
+            background-color: #09090b;
+        }
+
+        .skeleton {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            background-color: rgb(63 63 70);
+        }
+
+        .mini-chart {
+            height: 42px;
+        }
+
+        .tag-pill {
+            transition: all 0.1s ease;
+        }
+        
+        .tag-pill:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 0 3px rgba(103, 232, 249, 0.1);
+        }
+
+        .dashboard-grid {
+            background-image: 
+                linear-gradient(rgba(63, 63, 70, 0.06) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(63, 63, 70, 0.06) 1px, transparent 1px);
+            background-size: 32px 32px;
+        }
+
+        .metric-number {
+            font-feature-settings: "ss02";
+        }
+
+        .saas-shadow {
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.2),
+                        0 4px 6px -4px rgb(0 0 0 / 0.2);
+        }
+
+        .glassmorphism {
+            background: rgba(24, 24, 27, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+
+        .nav-active {
+            color: #67f6ff;
+            position: relative;
+        }
+        
+        .nav-active:after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(to right, #67f6ff, transparent);
+        }
+
+        .data-table th {
+            font-weight: 600;
+            color: #a1a1aa;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .post-preview {
+            max-height: 3.8rem;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+        }
+
+        .lucide {
+            width: 18px;
+            height: 18px;
+        }
+
+        .pro-badge {
+            background: linear-gradient(90deg, #22d3ee, #6366f1);
+            color: black;
+            font-weight: 700;
+            font-size: 0.65rem;
+            padding: 1px 7px;
+            border-radius: 9999px;
+            letter-spacing: -.5px;
+        }
+
+        .fake-tweet {
+            font-size: 0.925rem;
+            line-height: 1.35;
+        }
+    </style>
+</head>
+<body class="bg-zinc-950 text-zinc-200 x-dark">
+    <!-- NAVBAR -->
+    <nav class="sticky top-0 z-50 border-b border-zinc-800 bg-zinc-950/95 backdrop-blur-xl">
+        <div class="max-w-screen-2xl mx-auto">
+            <div class="px-8 py-4 flex items-center justify-between">
+                <!-- Logo -->
+                <div class="flex items-center gap-x-3">
+                    <div class="flex items-center justify-center w-10 h-10 rounded-2xl bg-gradient-to-br from-cyan-400 to-indigo-500 shadow-lg shadow-cyan-500/20">
+                        <i class="fa-solid fa-chart-line text-white text-3xl"></i>
+                    </div>
+                    <div>
+                        <span class="font-display text-3xl font-semibold tracking-tighter">TrendScope</span>
+                        <span class="ml-1.5 text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-900 text-cyan-400 border border-zinc-700">BETA</span>
+                    </div>
+                </div>
+
+                <!-- Global Search -->
+                <div class="flex-1 max-w-xl mx-8">
+                    <div class="relative group">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i class="fa-solid fa-search text-zinc-400"></i>
+                        </div>
+                        <input id="global-search" 
+                               type="text" 
+                               placeholder="Search #hashtag or $cashtag  •  Press Enter"
+                               class="w-full bg-zinc-900 border border-zinc-700 focus:border-cyan-500 transition-colors pl-11 pr-4 py-3 rounded-2xl text-sm placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/30">
+                        <div class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-x-1 text-[10px] text-zinc-500 font-mono">
+                            <span class="px-1.5 py-px bg-zinc-800 rounded"># or $</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right side controls -->
+                <div class="flex items-center gap-x-3">
+                    <!-- Live indicator -->
+                    <div class="hidden md:flex items-center gap-x-2 px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-2xl text-xs">
+                        <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+                        <span class="text-emerald-400 font-medium">Live • 142k posts/min</span>
+                    </div>
+
+                    <!-- Notifications -->
+                    <div class="relative">
+                        <button onclick="showNotifications()" 
+                                class="flex items-center justify-center w-10 h-10 hover:bg-zinc-900 transition-colors rounded-2xl border border-zinc-800 text-zinc-400 hover:text-white">
+                            <i class="fa-solid fa-bell text-lg"></i>
+                        </button>
+                        <div id="notif-badge" 
+                             class="absolute -top-0.5 -right-0.5 bg-rose-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-zinc-950">3</div>
+                    </div>
+
+                    <!-- Collections -->
+                    <button onclick="showCollections()" 
+                            class="flex items-center justify-center w-10 h-10 hover:bg-zinc-900 transition-colors rounded-2xl border border-zinc-800 text-zinc-400 hover:text-white">
+                        <i class="fa-solid fa-bookmark text-lg"></i>
+                    </button>
+
+                    <!-- User Profile -->
+                    <div class="flex items-center gap-x-2 pl-2 border-l border-zinc-800">
+                        <div onclick="showUserMenu()" class="flex items-center gap-x-2.5 cursor-pointer group">
+                            <div class="text-right hidden md:block">
+                                <div class="text-sm font-semibold">Eagle Wagmi</div>
+                                <div class="text-[10px] text-emerald-400 -mt-0.5">@eagle_wagmi</div>
+                            </div>
+                            <div class="w-9 h-9 rounded-2xl overflow-hidden ring-2 ring-offset-2 ring-offset-zinc-950 ring-zinc-700 group-hover:ring-cyan-500 transition-all">
+                                <img src="https://i.pravatar.cc/36?u=eagle_wagmi" alt="Eagle Wagmi" class="w-full h-full object-cover">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-screen-2xl mx-auto flex">
+        <!-- SIDEBAR -->
+        <div class="w-72 border-r border-zinc-800 bg-zinc-900/30 min-h-[calc(100vh-65px)] hidden lg:flex flex-col">
+            <div class="p-5 flex-1">
+                <div class="space-y-1 text-sm">
+                    <div onclick="switchView('overview')" class="nav-item flex items-center gap-x-3 px-4 py-[10px] rounded-2xl cursor-pointer hover:bg-zinc-800 text-zinc-300 hover:text-white active">
+                        <i class="fa-solid fa-home w-4"></i>
+                        <span class="font-medium">Overview</span>
+                    </div>
+                    
+                    <div onclick="switchView('search')" class="nav-item flex items-center gap-x-3 px-4 py-[10px] rounded-2xl cursor-pointer hover:bg-zinc-800 text-zinc-300 hover:text-white">
+                        <i class="fa-solid fa-search w-4"></i>
+                        <span class="font-medium">Search &amp; Leaderboard</span>
+                    </div>
+                    
+                    <div onclick="switchView('trending')" class="nav-item flex items-center gap-x-3 px-4 py-[10px] rounded-2xl cursor-pointer hover:bg-zinc-800 text-zinc-300 hover:text-white">
+                        <i class="fa-solid fa-fire w-4"></i>
+                        <span class="font-medium">Trending Dashboard</span>
+                    </div>
+                    
+                    <div onclick="switchView('user-analytics')" class="nav-item flex items-center gap-x-3 px-4 py-[10px] rounded-2xl cursor-pointer hover:bg-zinc-800 text-zinc-300 hover:text-white">
+                        <i class="fa-solid fa-user-chart w-4"></i>
+                        <span class="font-medium">User Analytics</span>
+                    </div>
+                    
+                    <div onclick="switchView('discovery')" class="nav-item flex items-center gap-x-3 px-4 py-[10px] rounded-2xl cursor-pointer hover:bg-zinc-800 text-zinc-300 hover:text-white">
+                        <i class="fa-solid fa-users w-4"></i>
+                        <span class="font-medium">Influencer Discovery</span>
+                    </div>
+                    
+                    <div onclick="switchView('alerts')" class="nav-item flex items-center gap-x-3 px-4 py-[10px] rounded-2xl cursor-pointer hover:bg-zinc-800 text-zinc-300 hover:text-white">
+                        <i class="fa-solid fa-bell w-4"></i>
+                        <span class="font-medium">Alerts</span>
+                    </div>
+                    
+                    <div onclick="switchView('heatmap')" class="nav-item flex items-center gap-x-3 px-4 py-[10px] rounded-2xl cursor-pointer hover:bg-zinc-800 text-zinc-300 hover:text-white">
+                        <i class="fa-solid fa-globe w-4"></i>
+                        <span class="font-medium">Global Heatmap</span>
+                    </div>
+                    
+                    <div class="pt-3 mt-3 border-t border-zinc-800">
+                        <div onclick="switchView('collections')" class="nav-item flex items-center gap-x-3 px-4 py-[10px] rounded-2xl cursor-pointer hover:bg-zinc-800 text-zinc-300 hover:text-white">
+                            <i class="fa-solid fa-bookmark w-4"></i>
+                            <span class="font-medium">My Collections</span>
+                        </div>
+                        
+                        <div onclick="switchView('api')" class="nav-item flex items-center gap-x-3 px-4 py-[10px] rounded-2xl cursor-pointer hover:bg-zinc-800 text-zinc-300 hover:text-white">
+                            <i class="fa-solid fa-plug w-4"></i>
+                            <span class="font-medium">API Access</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sidebar footer -->
+            <div class="p-5 border-t border-zinc-800">
+                <div onclick="showUpgradeModal()" class="cursor-pointer flex items-center justify-center gap-x-2 px-4 py-3 bg-gradient-to-r from-cyan-400/10 to-indigo-500/10 hover:from-cyan-400/20 hover:to-indigo-500/20 transition-colors border border-cyan-400/30 rounded-2xl text-sm">
+                    <i class="fa-solid fa-rocket text-cyan-400"></i>
+                    <span class="font-semibold text-cyan-400">Upgrade to Pro</span>
+                </div>
+                <div class="mt-4 text-center">
+                    <div class="text-[10px] text-zinc-500">v2.4.1 • 184k analyses today</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MAIN CONTENT -->
+        <div class="flex-1 min-h-[calc(100vh-65px)] overflow-auto">
+            
+            <!-- OVERVIEW VIEW -->
+            <div id="view-overview" class="view p-8 max-w-[1480px]">
+                <div class="flex items-end justify-between mb-8">
+                    <div>
+                        <h1 class="section-header tracking-tighter">Good afternoon, Eagle.</h1>
+                        <p class="text-zinc-400 mt-1">Here's what's happening across X right now.</p>
+                    </div>
+                    <div class="flex items-center gap-x-3">
+                        <button onclick="refreshAllData()" 
+                                class="flex items-center gap-x-2 px-5 py-2.5 text-sm border border-zinc-700 hover:bg-zinc-900 transition-colors rounded-2xl">
+                            <i class="fa-solid fa-sync-alt mr-2"></i>
+                            <span>Refresh data</span>
+                        </button>
+                        <button onclick="switchView('search')" 
+                                class="flex items-center gap-x-2 px-5 py-2.5 bg-white text-zinc-950 hover:bg-zinc-100 transition-all font-semibold rounded-2xl text-sm">
+                            <i class="fa-solid fa-search mr-2"></i>
+                            <span>New Search</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    <div class="glass rounded-3xl p-5 border border-zinc-800">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <div class="text-xs tracking-widest text-zinc-400">TOTAL POSTS TODAY</div>
+                                <div class="text-4xl font-semibold metric-number mt-3">2.84m</div>
+                            </div>
+                            <div class="text-emerald-400"><i class="fa-solid fa-arrow-trend-up text-2xl"></i></div>
+                        </div>
+                        <div class="flex items-center gap-x-1 mt-4 text-xs">
+                            <span class="text-emerald-400 font-medium">+18.4%</span>
+                            <span class="text-zinc-500">from yesterday</span>
+                        </div>
+                    </div>
+                    
+                    <div class="glass rounded-3xl p-5 border border-zinc-800">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <div class="text-xs tracking-widest text-zinc-400">EST. IMPRESSIONS</div>
+                                <div class="text-4xl font-semibold metric-number mt-3">41.2b</div>
+                            </div>
+                            <div class="text-emerald-400"><i class="fa-solid fa-eye text-2xl"></i></div>
+                        </div>
+                        <div class="flex items-center gap-x-1 mt-4 text-xs">
+                            <span class="text-emerald-400 font-medium">+31%</span>
+                            <span class="text-zinc-500">from yesterday</span>
+                        </div>
+                    </div>
+                    
+                    <div class="glass rounded-3xl p-5 border border-zinc-800">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <div class="text-xs tracking-widest text-zinc-400">AVG ENGAGEMENT</div>
+                                <div class="text-4xl font-semibold metric-number mt-3">4.82%</div>
+                            </div>
+                            <div class="text-amber-400"><i class="fa-solid fa-chart-line text-2xl"></i></div>
+                        </div>
+                        <div class="flex items-center gap-x-1 mt-4 text-xs">
+                            <span class="text-amber-400 font-medium">-0.3%</span>
+                            <span class="text-zinc-500">from last week</span>
+                        </div>
+                    </div>
+                    
+                    <div class="glass rounded-3xl p-5 border border-zinc-800">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <div class="text-xs tracking-widest text-zinc-400">TRENDING TAGS</div>
+                                <div class="text-4xl font-semibold metric-number mt-3">1,284</div>
+                            </div>
+                            <div class="text-cyan-400"><i class="fa-solid fa-hashtag text-2xl"></i></div>
+                        </div>
+                        <div class="mt-4 flex -space-x-1">
+                            <div class="w-6 h-6 rounded-full bg-zinc-700 ring-2 ring-zinc-950 overflow-hidden"><img src="https://i.pravatar.cc/24?u=btc" class="w-full h-full"></div>
+                            <div class="w-6 h-6 rounded-full bg-zinc-700 ring-2 ring-zinc-950 overflow-hidden"><img src="https://i.pravatar.cc/24?u=sol" class="w-full h-full"></div>
+                            <div class="w-6 h-6 rounded-full bg-zinc-700 ring-2 ring-zinc-950 overflow-hidden"><img src="https://i.pravatar.cc/24?u=eth" class="w-full h-full"></div>
+                            <div class="text-xs ml-3 text-zinc-400 self-center">+1,279 more</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Trending + Top Viral -->
+                <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+                    <!-- Top Cashtags -->
+                    <div class="xl:col-span-5 glass rounded-3xl border border-zinc-800 p-6">
+                        <div class="flex items-center justify-between mb-5">
+                            <div class="font-semibold flex items-center gap-x-2"><i class="fa-solid fa-dollar-sign text-emerald-400"></i> <span>Top Cashtags Today</span></div>
+                            <button onclick="switchView('trending')" class="text-xs text-cyan-400 hover:text-cyan-300 flex items-center gap-x-1">See all <i class="fa-solid fa-arrow-right text-xs"></i></button>
+                        </div>
+                        <div class="space-y-2" id="quick-cashtags">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Top Hashtags -->
+                    <div class="xl:col-span-4 glass rounded-3xl border border-zinc-800 p-6">
+                        <div class="flex items-center justify-between mb-5">
+                            <div class="font-semibold flex items-center gap-x-2"><i class="fa-solid fa-hashtag text-violet-400"></i> <span>Top Hashtags</span></div>
+                            <button onclick="switchView('trending')" class="text-xs text-cyan-400 hover:text-cyan-300 flex items-center gap-x-1">See all</button>
+                        </div>
+                        <div class="flex flex-wrap gap-2" id="quick-hashtags">
+                            <!-- JS populated -->
+                        </div>
+                    </div>
+
+                    <!-- Top Viral Post -->
+                    <div class="xl:col-span-3 glass rounded-3xl border border-zinc-800 p-6 flex flex-col">
+                        <div class="font-semibold mb-4 flex items-center gap-x-2"><i class="fa-solid fa-bolt text-rose-400"></i> <span>Top Viral Post</span></div>
+                        <div onclick="showPostModal(0)" class="flex-1 cursor-pointer">
+                            <div class="flex items-center gap-x-2 mb-3">
+                                <img src="https://i.pravatar.cc/28?u=vitalik" class="w-7 h-7 rounded-full">
+                                <div>
+                                    <span class="font-semibold text-sm">Vitalik Buterin</span>
+                                    <span class="text-emerald-400 text-xs ml-1">• @VitalikButerin</span>
+                                </div>
+                            </div>
+                            <div class="tweet-text text-sm text-zinc-300">"The future of decentralized identity is here. Excited to see what the community builds with $ENS and the new standards."</div>
+                            
+                            <div class="flex justify-between items-end mt-auto pt-4">
+                                <div class="flex gap-x-4 text-xs">
+                                    <div><span class="font-semibold text-emerald-400">184k</span> <span class="text-zinc-400">likes</span></div>
+                                    <div><span class="font-semibold">42.1k</span> <span class="text-zinc-400">reposts</span></div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-xs text-emerald-400 font-medium">92.4m impressions</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SEARCH & LEADERBOARD VIEW -->
+            <div id="view-search" class="view hidden p-8 max-w-[1480px]">
+                <div class="mb-6">
+                    <h1 class="section-header">Search &amp; Leaderboard</h1>
+                    <p class="text-zinc-400">Analyze any hashtag or cashtag. Results update in real-time.</p>
+                </div>
+
+                <!-- Search controls -->
+                <div class="flex flex-col md:flex-row gap-3 mb-6">
+                    <div class="flex-1 relative">
+                        <input id="search-input" type="text" value="$ANSEM" 
+                               class="w-full bg-zinc-900 border border-zinc-700 focus:border-cyan-400 pl-5 py-3.5 rounded-2xl text-lg font-medium placeholder:text-zinc-500"
+                               placeholder="#Solana or $BTC">
+                        <div class="absolute right-4 top-4 text-xs px-2 py-1 bg-zinc-800 rounded-lg text-zinc-400 font-mono">AUTO-DETECT</div>
+                    </div>
+                    <button onclick="performSearch()" 
+                            class="px-10 py-3.5 bg-white hover:bg-zinc-100 active:bg-zinc-200 transition-all text-zinc-950 font-bold rounded-2xl flex items-center justify-center gap-x-2">
+                        <i class="fa-solid fa-search"></i>
+                        <span>Analyze</span>
+                    </button>
+                    <button onclick="randomTrendingSearch()" 
+                            class="px-6 py-3.5 border border-zinc-700 hover:bg-zinc-900 transition-all rounded-2xl flex items-center gap-x-2 text-sm">
+                        <i class="fa-solid fa-dice"></i>
+                        <span>I'm Feeling Lucky</span>
+                    </button>
+                </div>
+
+                <!-- Results header -->
+                <div id="search-results-header" class="hidden mb-4 items-center justify-between">
+                    <div class="flex items-center gap-x-4">
+                        <div id="search-tag-pill" 
+                             class="inline-flex items-center px-5 h-9 rounded-2xl text-base font-semibold bg-zinc-900 border border-zinc-700"></div>
+                        <div class="text-sm text-zinc-400">
+                            <span id="search-post-count">12,481</span> posts • 
+                            <span id="search-impressions">1.84b</span> impressions
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center gap-x-2">
+                        <div class="text-xs uppercase tracking-widest text-zinc-400 mr-2">Sort by</div>
+                        <div class="flex bg-zinc-900 border border-zinc-700 rounded-2xl p-1 text-sm">
+                            <button onclick="sortLeaderboard('impressions')" class="sort-btn active px-4 py-1 rounded-[14px]" data-sort="impressions">Impressions</button>
+                            <button onclick="sortLeaderboard('likes')" class="sort-btn px-4 py-1 rounded-[14px]" data-sort="likes">Likes</button>
+                            <button onclick="sortLeaderboard('reposts')" class="sort-btn px-4 py-1 rounded-[14px]" data-sort="reposts">Reposts</button>
+                            <button onclick="sortLeaderboard('engagement')" class="sort-btn px-4 py-1 rounded-[14px]" data-sort="engagement">Eng. Rate</button>
+                            <button onclick="sortLeaderboard('newest')" class="sort-btn px-4 py-1 rounded-[14px]" data-sort="newest">Newest</button>
+                        </div>
+                        
+                        <button onclick="exportToCSV()" class="flex items-center gap-x-2 px-4 py-2 text-xs border border-zinc-700 hover:bg-zinc-900 transition-colors rounded-2xl">
+                            <i class="fa-solid fa-download text-xs"></i>
+                            <span class="hidden md:inline">Export CSV</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Leaderboard Table -->
+                <div id="search-results-header" class="hidden">
+                    <div class="glass border border-zinc-800 rounded-3xl overflow-hidden">
+                        <table class="w-full data-table">
+                            <thead>
+                                <tr class="border-b border-zinc-700 bg-zinc-900/60">
+                                    <th class="w-12 py-4 px-6 text-left">#</th>
+                                    <th class="py-4 px-6 text-left">Post</th>
+                                    <th class="w-44 py-4 px-6 text-left">Account</th>
+                                    <th class="w-28 py-4 px-6 text-right">Followers</th>
+                                    <th class="w-24 py-4 px-6 text-center">Verified</th>
+                                    <th onclick="sortLeaderboard('impressions')" class="cursor-pointer w-36 py-4 px-6 text-right hover:text-white">Est. Impressions <i class="fa-solid fa-sort ml-1 text-xs"></i></th>
+                                    <th onclick="sortLeaderboard('likes')" class="cursor-pointer w-24 py-4 px-6 text-right hover:text-white">Likes</th>
+                                    <th onclick="sortLeaderboard('reposts')" class="cursor-pointer w-24 py-4 px-6 text-right hover:text-white">Reposts</th>
+                                    <th class="w-20 py-4 px-6 text-right">Replies</th>
+                                    <th class="w-24 py-4 px-6 text-right">Eng. Rate</th>
+                                    <th class="w-36 py-4 px-6 text-right">Posted</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leaderboard-body" class="text-sm divide-y divide-zinc-800">
+                                <!-- Populated dynamically by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="flex justify-between items-center mt-4 px-1 text-xs text-zinc-400">
+                        <div>Showing <span id="showing-count">12</span> of <span id="total-count">12,481</span> posts</div>
+                        <div class="flex items-center gap-x-2">
+                            <button class="px-3 py-1 border border-zinc-700 rounded-xl hover:bg-zinc-900">Previous</button>
+                            <button class="px-3 py-1 border border-zinc-700 rounded-xl hover:bg-zinc-900">Next page</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="no-results" class="hidden py-16 text-center">
+                    <i class="fa-solid fa-search text-5xl text-zinc-700 mb-4"></i>
+                    <p class="text-xl">No data yet for this tag.</p>
+                    <p class="text-sm text-zinc-400 mt-1">Try searching for popular ones like $BTC, #Solana, or $ANSEM</p>
+                </div>
+            </div>
+
+            <!-- TRENDING DASHBOARD VIEW -->
+            <div id="view-trending" class="view hidden p-8 max-w-[1480px]">
+                <div class="flex justify-between items-end mb-8">
+                    <div>
+                        <h1 class="section-header">Trending Dashboard</h1>
+                        <p class="text-zinc-400">Real-time pulse of X • Updated seconds ago</p>
+                    </div>
+                    <button onclick="refreshTrending()" class="px-5 py-2 text-sm flex items-center gap-x-2 border border-zinc-700 rounded-2xl hover:bg-zinc-900">
+                        <i class="fa-solid fa-sync fa-fw"></i> <span>Refresh</span>
+                    </button>
+                </div>
+
+                <!-- Top Cashtags -->
+                <div class="mb-8">
+                    <div class="flex items-center justify-between mb-4 px-1">
+                        <div class="font-semibold text-lg flex items-center gap-x-2"><i class="fa-solid fa-dollar-sign text-emerald-400"></i> Top Trending Cashtags</div>
+                        <span class="text-xs px-3 py-1 bg-emerald-400/10 text-emerald-400 rounded-full">24h</span>
+                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4" id="trending-cashtags-grid">
+                        <!-- JS populated cards -->
+                    </div>
+                </div>
+
+                <!-- Top Hashtags + Fastest Growing -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <div>
+                        <div class="font-semibold text-lg mb-4 px-1 flex items-center gap-x-2"><i class="fa-solid fa-hashtag text-violet-400"></i> Top Hashtags Today</div>
+                        <div class="glass border border-zinc-800 rounded-3xl p-5">
+                            <div id="trending-hashtags-list" class="space-y-[1px]">
+                                <!-- JS -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <div class="font-semibold text-lg mb-4 px-1 flex items-center gap-x-2"><i class="fa-solid fa-rocket text-orange-400"></i> Fastest Growing</div>
+                        <div class="glass border border-zinc-800 rounded-3xl p-5">
+                            <div id="fastest-growing-list" class="space-y-3">
+                                <!-- JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Category sections -->
+                <div class="mb-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="font-semibold">Explore Categories</div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                        <!-- Memecoins -->
+                        <div onclick="filterTrendingByCategory('memecoin')" class="glass border border-zinc-700 hover:border-emerald-400/60 cursor-pointer rounded-3xl p-5 transition-all group">
+                            <div class="flex justify-between">
+                                <div>
+                                    <div class="font-semibold">Memecoins</div>
+                                    <div class="text-xs text-emerald-400">142 tags • +64% volume</div>
+                                </div>
+                                <i class="fa-solid fa-dog text-3xl text-emerald-400/70 group-hover:scale-110 transition"></i>
+                            </div>
+                            <div class="mt-4 text-xs flex flex-wrap gap-1.5">
+                                <span class="bg-emerald-400/10 text-emerald-400 px-2 py-px rounded">$ANSEM</span>
+                                <span class="bg-emerald-400/10 text-emerald-400 px-2 py-px rounded">$PEPE</span>
+                                <span class="bg-emerald-400/10 text-emerald-400 px-2 py-px rounded">$DOGE</span>
+                            </div>
+                        </div>
+                        
+                        <div onclick="filterTrendingByCategory('ai')" class="glass border border-zinc-700 hover:border-sky-400/60 cursor-pointer rounded-3xl p-5 transition-all group">
+                            <div class="flex justify-between">
+                                <div>
+                                    <div class="font-semibold">AI Projects</div>
+                                    <div class="text-xs text-sky-400">87 tags • Hot</div>
+                                </div>
+                                <i class="fa-solid fa-robot text-3xl text-sky-400/70 group-hover:scale-110 transition"></i>
+                            </div>
+                            <div class="mt-4 text-xs flex flex-wrap gap-1.5">
+                                <span class="bg-sky-400/10 text-sky-400 px-2 py-px rounded">#AI</span>
+                                <span class="bg-sky-400/10 text-sky-400 px-2 py-px rounded">$FET</span>
+                                <span class="bg-sky-400/10 text-sky-400 px-2 py-px rounded">$TAO</span>
+                            </div>
+                        </div>
+                        
+                        <div onclick="filterTrendingByCategory('nft')" class="glass border border-zinc-700 hover:border-purple-400/60 cursor-pointer rounded-3xl p-5 transition-all group">
+                            <div class="flex justify-between">
+                                <div>
+                                    <div class="font-semibold">NFT Collections</div>
+                                    <div class="text-xs text-purple-400">63 tags</div>
+                                </div>
+                                <i class="fa-solid fa-images text-3xl text-purple-400/70 group-hover:scale-110 transition"></i>
+                            </div>
+                            <div class="mt-4 text-xs flex flex-wrap gap-1.5">
+                                <span class="bg-purple-400/10 text-purple-400 px-2 py-px rounded">#BAYC</span>
+                                <span class="bg-purple-400/10 text-purple-400 px-2 py-px rounded">$PUDGY</span>
+                            </div>
+                        </div>
+                        
+                        <div onclick="filterTrendingByCategory('gaming')" class="glass border border-zinc-700 hover:border-amber-400/60 cursor-pointer rounded-3xl p-5 transition-all group">
+                            <div class="flex justify-between">
+                                <div>
+                                    <div class="font-semibold">Gaming</div>
+                                    <div class="text-xs text-amber-400">41 tags</div>
+                                </div>
+                                <i class="fa-solid fa-gamepad text-3xl text-amber-400/70 group-hover:scale-110 transition"></i>
+                            </div>
+                            <div class="mt-4 text-xs flex flex-wrap gap-1.5">
+                                <span class="bg-amber-400/10 text-amber-400 px-2 py-px rounded">#Web3Gaming</span>
+                            </div>
+                        </div>
+                        
+                        <div onclick="filterTrendingByCategory('crypto')" class="glass border border-zinc-700 hover:border-orange-400/60 cursor-pointer rounded-3xl p-5 transition-all group">
+                            <div class="flex justify-between">
+                                <div>
+                                    <div class="font-semibold">Layer 1s &amp; DeFi</div>
+                                    <div class="text-xs text-orange-400">219 tags</div>
+                                </div>
+                                <i class="fa-solid fa-link text-3xl text-orange-400/70 group-hover:scale-110 transition"></i>
+                            </div>
+                            <div class="mt-4 text-xs flex flex-wrap gap-1.5">
+                                <span class="bg-orange-400/10 text-orange-400 px-2 py-px rounded">#Solana</span>
+                                <span class="bg-orange-400/10 text-orange-400 px-2 py-px rounded">$ETH</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Top Viral Posts row -->
+                <div>
+                    <div class="font-semibold mb-4 px-1">Top Viral Posts Right Now</div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="viral-posts-grid">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- USER ANALYTICS VIEW -->
+            <div id="view-user-analytics" class="view hidden p-8 max-w-[1200px]">
+                <div class="mb-8">
+                    <h1 class="section-header">User Analytics</h1>
+                    <p class="text-zinc-400">Deep dive into any X account's performance.</p>
+                </div>
+                
+                <div class="flex gap-3 mb-8">
+                    <div class="flex-1">
+                        <div class="relative">
+                            <input id="user-analytics-input" type="text" value="@eagle_wagmi" placeholder="@username" 
+                                   class="w-full bg-zinc-900 border border-zinc-700 focus:border-cyan-400 pl-5 py-3 rounded-2xl text-lg">
+                        </div>
+                    </div>
+                    <button onclick="analyzeUser()" class="px-9 bg-white text-black font-bold rounded-2xl flex items-center">Analyze Account</button>
+                </div>
+
+                <!-- User Profile Header (populated on analyze) -->
+                <div id="user-profile-header" class="hidden glass border border-zinc-700 rounded-3xl p-6 mb-6">
+                    <div class="flex items-start gap-x-5">
+                        <div id="user-avatar-large" class="w-20 h-20 rounded-3xl overflow-hidden ring-4 ring-zinc-800 flex-shrink-0"></div>
+                        <div class="flex-1">
+                            <div class="flex items-center gap-x-3">
+                                <div id="user-name-header" class="text-3xl font-semibold"></div>
+                                <div id="user-verified-header"></div>
+                                <div class="pro-badge ml-auto">PRO</div>
+                            </div>
+                            <div id="user-handle-header" class="text-cyan-400 font-mono"></div>
+                            
+                            <div class="flex items-center gap-x-6 mt-3 text-sm">
+                                <div><span id="user-followers" class="font-semibold text-xl"></span> <span class="text-zinc-400">followers</span></div>
+                                <div class="text-emerald-400"><span id="user-growth"></span> this week</div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <button onclick="addToWatchlistFromUser()" class="px-5 py-2 text-sm border border-zinc-600 hover:bg-zinc-800 transition rounded-2xl flex items-center gap-x-2">
+                                <i class="fa-solid fa-plus"></i> <span>Track</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KPI Grid -->
+                <div id="user-kpis" class="hidden grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    <div class="glass border border-zinc-700 rounded-3xl p-5">
+                        <div class="text-xs text-zinc-400">EST. DAILY IMPRESSIONS</div>
+                        <div id="kpi-impressions" class="text-4xl font-semibold mt-2 metric-number"></div>
+                        <div class="text-emerald-400 text-xs mt-1">+24% vs last week</div>
+                    </div>
+                    <div class="glass border border-zinc-700 rounded-3xl p-5">
+                        <div class="text-xs text-zinc-400">AVG ENGAGEMENT RATE</div>
+                        <div id="kpi-engagement" class="text-4xl font-semibold mt-2"></div>
+                        <div class="text-xs mt-1 text-zinc-400">Top 8% of creators</div>
+                    </div>
+                    <div class="glass border border-zinc-700 rounded-3xl p-5">
+                        <div class="text-xs text-zinc-400">BEST POSTING TIME</div>
+                        <div id="kpi-best-time" class="text-3xl font-semibold mt-2"></div>
+                        <div class="text-xs text-amber-400 mt-1">Lagos (WAT)</div>
+                    </div>
+                    <div class="glass border border-zinc-700 rounded-3xl p-5">
+                        <div class="text-xs text-zinc-400">POSTING FREQUENCY</div>
+                        <div id="kpi-frequency" class="text-4xl font-semibold mt-2"></div>
+                        <div class="text-xs mt-1">posts per day avg</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                    <!-- Charts -->
+                    <div class="lg:col-span-3 glass border border-zinc-700 rounded-3xl p-6">
+                        <div class="font-semibold mb-4 flex items-center justify-between">
+                            <span>Content Performance (14d)</span>
+                            <span class="text-xs text-zinc-400">Impressions</span>
+                        </div>
+                        <canvas id="user-performance-chart" height="110"></canvas>
+                    </div>
+                    
+                    <div class="lg:col-span-2 glass border border-zinc-700 rounded-3xl p-6">
+                        <div class="font-semibold mb-4">Most Used Tags</div>
+                        <div class="space-y-4 text-sm" id="user-top-tags">
+                            <!-- JS populated -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Top posts by this user -->
+                <div class="mt-6">
+                    <div class="font-semibold mb-4 px-1">Top Performing Posts</div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="user-top-posts">
+                        <!-- JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- INFLUENCER DISCOVERY VIEW -->
+            <div id="view-discovery" class="view hidden p-8 max-w-[1480px]">
+                <div class="flex justify-between mb-8 items-end">
+                    <div>
+                        <h1 class="section-header">Influencer Discovery</h1>
+                        <p class="text-zinc-400">Find high-performing creators across niches</p>
+                    </div>
+                    <div>
+                        <button onclick="resetDiscoveryFilters()" class="text-xs px-4 py-2 border border-zinc-700 rounded-2xl">Reset filters</button>
+                    </div>
+                </div>
+                
+                <div class="flex flex-col lg:flex-row gap-6">
+                    <!-- Filters -->
+                    <div class="lg:w-72 flex-shrink-0">
+                        <div class="glass border border-zinc-700 rounded-3xl p-5 sticky top-4">
+                            <div class="font-semibold mb-4 text-sm tracking-wider">FILTERS</div>
+                            
+                            <div class="mb-5">
+                                <div class="text-xs text-zinc-400 mb-2">CATEGORIES</div>
+                                <div class="flex flex-wrap gap-1.5" id="category-filters">
+                                    <!-- Populated by JS: Crypto, AI, Gaming etc -->
+                                </div>
+                            </div>
+                            
+                            <div class="mb-5">
+                                <div class="flex justify-between text-xs mb-1.5"><span class="text-zinc-400">MIN FOLLOWERS</span> <span id="followers-val" class="font-mono">50k</span></div>
+                                <input type="range" id="followers-slider" min="1000" max="5000000" step="1000" value="50000" 
+                                       class="w-full accent-cyan-400" oninput="updateDiscoveryFilters()">
+                            </div>
+                            
+                            <div class="mb-5">
+                                <div class="flex justify-between text-xs mb-1.5"><span class="text-zinc-400">MIN ENGAGEMENT</span> <span id="engagement-val">3.5%</span></div>
+                                <input type="range" id="engagement-slider" min="0.5" max="25" step="0.1" value="3.5" 
+                                       class="w-full accent-cyan-400" oninput="updateDiscoveryFilters()">
+                            </div>
+                            
+                            <div class="mb-6">
+                                <div class="flex justify-between text-xs mb-1.5"><span class="text-zinc-400">MIN IMPRESSIONS (daily)</span> <span id="impr-val">120k</span></div>
+                                <input type="range" id="impressions-slider" min="10000" max="2000000" step="10000" value="120000" 
+                                       class="w-full accent-cyan-400" oninput="updateDiscoveryFilters()">
+                            </div>
+                            
+                            <div class="flex items-center">
+                                <input type="checkbox" id="verified-only" checked onchange="updateDiscoveryFilters()" class="accent-cyan-400 mr-2">
+                                <label for="verified-only" class="text-sm cursor-pointer">Verified accounts only</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Results Grid -->
+                    <div class="flex-1">
+                        <div class="mb-3 flex items-center justify-between text-sm px-1">
+                            <div><span id="discovery-count">184</span> influencers found</div>
+                            <div class="text-xs text-zinc-400">Sorted by engagement • <span class="text-emerald-400">Pro</span></div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4" id="influencer-grid">
+                            <!-- JS populated influencer cards -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ALERTS VIEW -->
+            <div id="view-alerts" class="view hidden p-8 max-w-[1100px]">
+                <div class="flex items-center justify-between mb-8">
+                    <div>
+                        <h1 class="section-header">Alerts &amp; Notifications</h1>
+                        <p class="text-zinc-400">Get notified the moment something important happens on X.</p>
+                    </div>
+                    <button onclick="showCreateAlertModal()" class="px-6 py-3 bg-white text-black font-semibold rounded-2xl flex items-center gap-x-2 text-sm">
+                        <i class="fa-solid fa-plus"></i> <span>Create Alert</span>
+                    </button>
+                </div>
+
+                <div class="glass border border-zinc-700 rounded-3xl p-6 mb-8">
+                    <div class="font-semibold mb-4">Active Alerts <span id="active-alerts-count" class="text-xs px-2 py-px bg-zinc-800 rounded-full">(4)</span></div>
+                    
+                    <div id="active-alerts-list" class="space-y-3">
+                        <!-- Populated by JS + localStorage -->
+                    </div>
+                </div>
+
+                <div class="text-xs px-1 text-zinc-400">Pro tip: Pro users receive alerts via email, Telegram, and Discord instantly.</div>
+            </div>
+
+            <!-- HEATMAP VIEW -->
+            <div id="view-heatmap" class="view hidden p-8 max-w-[1300px]">
+                <div class="mb-8">
+                    <h1 class="section-header">Global Heatmap</h1>
+                    <p class="text-zinc-400">Where conversations are heating up around the world.</p>
+                </div>
+                
+                <div class="glass border border-zinc-700 rounded-3xl p-8">
+                    <div class="flex justify-between items-center mb-6">
+                        <div>
+                            <span class="font-semibold">Worldwide Activity</span> 
+                            <span class="text-xs ml-3 px-3 py-1 rounded bg-emerald-400/10 text-emerald-400">LIVE</span>
+                        </div>
+                        <div class="text-xs text-zinc-400">Based on 18.4m geotagged posts today</div>
+                    </div>
+                    
+                    <!-- Simplified Interactive Regions -->
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4" id="heatmap-regions">
+                        <!-- Populated dynamically -->
+                    </div>
+                    
+                    <div class="mt-8 pt-6 border-t border-zinc-700 text-xs flex items-center justify-center gap-x-8 text-zinc-400">
+                        <div class="flex items-center gap-x-2"><div class="w-3 h-3 bg-emerald-400 rounded-full"></div> High activity</div>
+                        <div class="flex items-center gap-x-2"><div class="w-3 h-3 bg-amber-400 rounded-full"></div> Medium</div>
+                        <div class="flex items-center gap-x-2"><div class="w-3 h-3 bg-zinc-600 rounded-full"></div> Low</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COLLECTIONS VIEW -->
+            <div id="view-collections" class="view hidden p-8 max-w-[1200px]">
+                <div class="flex justify-between mb-8">
+                    <div>
+                        <h1 class="section-header">My Collections</h1>
+                        <p class="text-zinc-400">Your saved watchlists and favorite tags</p>
+                    </div>
+                    <button onclick="showCreateCollectionModal()" class="text-sm px-5 py-2 border border-zinc-600 rounded-2xl flex items-center gap-x-2">
+                        <i class="fa-solid fa-plus"></i> New Collection
+                    </button>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5" id="collections-grid">
+                    <!-- Populated from localStorage + defaults -->
+                </div>
+            </div>
+
+            <!-- API VIEW -->
+            <div id="view-api" class="view hidden p-8 max-w-[1100px]">
+                <div class="mb-8">
+                    <h1 class="section-header">REST API</h1>
+                    <p class="text-zinc-400">Build with TrendScope data. Pro plan required for production keys.</p>
+                </div>
+                
+                <div class="glass border border-zinc-700 rounded-3xl p-8 mb-8">
+                    <div class="font-mono text-xs mb-3 text-emerald-400">BASE URL</div>
+                    <div class="font-mono bg-black px-4 py-3 rounded-2xl text-sm">https://api.trendscope.xyz/v1</div>
+                    
+                    <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 text-sm">
+                        <div>
+                            <div class="font-semibold mb-2 flex items-center"><span class="text-emerald-400 font-mono mr-2">GET</span> /api/tag/:tag</div>
+                            <div class="text-xs text-zinc-400">Returns leaderboard, stats, sentiment and historical data for a hashtag or cashtag.</div>
+                            <div class="mt-3 text-[10px] font-mono bg-zinc-900 p-2 rounded">?limit=50&amp;sort=impressions</div>
+                        </div>
+                        <div>
+                            <div class="font-semibold mb-2 flex items-center"><span class="text-emerald-400 font-mono mr-2">GET</span> /api/user/:handle</div>
+                            <div class="text-xs text-zinc-400">Full analytics profile for any X user including best times, top content and growth estimates.</div>
+                        </div>
+                        <div>
+                            <div class="font-semibold mb-2 flex items-center"><span class="text-emerald-400 font-mono mr-2">GET</span> /api/trending</div>
+                            <div class="text-xs text-zinc-400">Returns current top trending cashtags, hashtags and viral posts globally or by category.</div>
+                        </div>
+                        <div>
+                            <div class="font-semibold mb-2 flex items-center"><span class="text-emerald-400 font-mono mr-2">POST</span> /api/alerts</div>
+                            <div class="text-xs text-zinc-400">Create real-time alert rules. Webhook + email delivery supported.</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <div class="font-semibold mb-3">Try it live</div>
+                    <div class="flex gap-3">
+                        <input id="api-test-input" value="$ANSEM" class="flex-1 bg-zinc-900 border border-zinc-700 px-4 py-3 rounded-2xl text-sm">
+                        <button onclick="testAPI()" class="px-8 bg-white text-zinc-950 font-bold rounded-2xl">Send Request</button>
+                    </div>
+                    <pre id="api-response" class="mt-4 bg-black border border-zinc-800 p-5 rounded-3xl text-xs overflow-auto max-h-[280px] hidden font-mono"></pre>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
+    <!-- TAG DETAIL MODAL -->
+    <div id="tag-detail-modal" onclick="if (event.target.id === 'tag-detail-modal') closeTagModal()" class="hidden fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-4">
+        <div onclick="event.stopImmediatePropagation()" class="glass border border-zinc-700 w-full max-w-5xl rounded-3xl max-h-[92vh] overflow-hidden flex flex-col">
+            <!-- Modal Header -->
+            <div class="px-8 pt-6 pb-4 border-b border-zinc-700 flex items-center justify-between bg-zinc-900/70">
+                <div class="flex items-center gap-x-4">
+                    <div id="modal-tag-pill" class="px-6 py-1.5 text-xl font-bold rounded-2xl bg-zinc-800"></div>
+                    <div>
+                        <div id="modal-stats" class="text-xs text-zinc-400 flex items-center gap-x-4"></div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-x-2">
+                    <button onclick="addCurrentTagToCollections()" class="px-4 py-2 text-xs flex items-center gap-x-2 border border-zinc-600 hover:bg-zinc-800 transition rounded-2xl">
+                        <i class="fa-solid fa-bookmark"></i> <span class="hidden md:inline">Save</span>
+                    </button>
+                    <button onclick="closeTagModal()" class="w-9 h-9 flex items-center justify-center text-xl hover:bg-zinc-800 rounded-2xl">&times;</button>
+                </div>
+            </div>
+            
+            <!-- Tabs -->
+            <div class="px-8 pt-4 flex border-b border-zinc-800 text-sm">
+                <div onclick="switchTagTab(0)" class="tag-tab px-5 py-3 cursor-pointer border-b-2 border-cyan-400 text-cyan-400 font-medium" data-tab="0">Overview</div>
+                <div onclick="switchTagTab(1)" class="tag-tab px-5 py-3 cursor-pointer text-zinc-300 hover:text-white" data-tab="1">Top Posts</div>
+                <div onclick="switchTagTab(2)" class="tag-tab px-5 py-3 cursor-pointer text-zinc-300 hover:text-white" data-tab="2">Influencers</div>
+                <div onclick="switchTagTab(3)" class="tag-tab px-5 py-3 cursor-pointer text-zinc-300 hover:text-white" data-tab="3">Analytics</div>
+                <div onclick="switchTagTab(4)" class="tag-tab px-5 py-3 cursor-pointer text-zinc-300 hover:text-white" data-tab="4">AI Insights</div>
+            </div>
+            
+            <div class="overflow-auto flex-1 p-8" style="max-height: calc(92vh - 170px)">
+                <!-- Tab contents -->
+                <div id="tag-tab-0">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                        <div class="bg-zinc-900 border border-zinc-700 rounded-2xl p-4">
+                            <div class="text-xs text-zinc-400">24H MENTIONS</div>
+                            <div id="modal-mentions" class="text-4xl font-semibold mt-1"></div>
+                        </div>
+                        <div class="bg-zinc-900 border border-zinc-700 rounded-2xl p-4">
+                            <div class="text-xs text-zinc-400">EST. IMPRESSIONS</div>
+                            <div id="modal-impressions" class="text-4xl font-semibold mt-1"></div>
+                        </div>
+                        <div class="bg-zinc-900 border border-zinc-700 rounded-2xl p-4">
+                            <div class="text-xs text-zinc-400">AVG ENGAGEMENT</div>
+                            <div id="modal-engagement" class="text-4xl font-semibold mt-1"></div>
+                        </div>
+                        <div class="bg-zinc-900 border border-zinc-700 rounded-2xl p-4">
+                            <div class="text-xs text-zinc-400">UNIQUE ACCOUNTS</div>
+                            <div id="modal-accounts" class="text-4xl font-semibold mt-1"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                        <div class="lg:col-span-3">
+                            <div class="font-semibold mb-3">AI Conversation Summary</div>
+                            <div id="ai-summary" class="text-sm leading-relaxed bg-zinc-900 border border-zinc-700 p-5 rounded-2xl text-zinc-300"></div>
+                            <button onclick="regenerateAISummary()" class="mt-3 text-xs flex items-center gap-x-1.5 text-cyan-400"><i class="fa-solid fa-sync fa-sm"></i> <span>Regenerate with latest data</span></button>
+                        </div>
+                        
+                        <div class="lg:col-span-2">
+                            <div class="font-semibold mb-3">Sentiment Analysis</div>
+                            <div class="space-y-4 bg-zinc-900 border border-zinc-700 p-5 rounded-2xl">
+                                <div>
+                                    <div class="flex justify-between text-xs mb-1"><span>Positive</span> <span id="sent-pos" class="font-mono"></span></div>
+                                    <div class="h-2 bg-zinc-700 rounded"><div id="sent-pos-bar" class="h-2 bg-emerald-400 rounded transition-all" style="width:65%"></div></div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between text-xs mb-1"><span>Neutral</span> <span id="sent-neu" class="font-mono"></span></div>
+                                    <div class="h-2 bg-zinc-700 rounded"><div id="sent-neu-bar" class="h-2 bg-amber-400 rounded transition-all" style="width:25%"></div></div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between text-xs mb-1"><span>Negative</span> <span id="sent-neg" class="font-mono"></span></div>
+                                    <div class="h-2 bg-zinc-700 rounded"><div id="sent-neg-bar" class="h-2 bg-rose-400 rounded transition-all" style="width:10%"></div></div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-4 bg-zinc-900 border border-zinc-700 p-4 rounded-2xl">
+                                <div class="flex justify-between text-sm">
+                                    <div>
+                                        <div class="text-xs text-zinc-400">24H PREDICTION</div>
+                                        <div id="prediction-text" class="font-semibold text-emerald-400"></div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div id="prediction-confidence" class="font-mono text-xl font-bold"></div>
+                                        <div class="text-[10px] text-zinc-400 -mt-1">confidence</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="tag-tab-1" class="hidden">
+                    <div class="font-semibold mb-4">Top Performing Posts</div>
+                    <div id="modal-leaderboard-body" class="space-y-3"></div>
+                </div>
+                
+                <div id="tag-tab-2" class="hidden">
+                    <div class="font-semibold mb-4">Top Influencers Discussing This Tag</div>
+                    <div id="modal-influencers-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                </div>
+                
+                <div id="tag-tab-3" class="hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div>
+                            <div class="font-semibold mb-3">Mentions Over Time</div>
+                            <canvas id="modal-mentions-chart" height="120"></canvas>
+                        </div>
+                        <div>
+                            <div class="font-semibold mb-3">Engagement &amp; Impressions Trend</div>
+                            <canvas id="modal-engagement-chart" height="120"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="tag-tab-4" class="hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="border border-zinc-700 bg-zinc-900 p-5 rounded-3xl">
+                            <div class="uppercase text-xs tracking-widest text-zinc-400 mb-1">Spam Risk</div>
+                            <div class="flex items-baseline"><span id="spam-score" class="text-6xl font-bold"></span><span class="text-zinc-400 ml-1">/100</span></div>
+                            <div class="text-emerald-400 text-sm">Low risk • Mostly organic</div>
+                        </div>
+                        <div class="border border-zinc-700 bg-zinc-900 p-5 rounded-3xl">
+                            <div class="uppercase text-xs tracking-widest text-zinc-400 mb-1">Influencer Score</div>
+                            <div class="flex items-baseline"><span id="influencer-score" class="text-6xl font-bold"></span><span class="text-zinc-400 ml-1">/100</span></div>
+                            <div class="text-emerald-400 text-sm">High quality discussion</div>
+                        </div>
+                        <div class="border border-zinc-700 bg-zinc-900 p-5 rounded-3xl">
+                            <div class="uppercase text-xs tracking-widest text-zinc-400 mb-1">Virality Score</div>
+                            <div class="flex items-baseline"><span id="virality-score" class="text-6xl font-bold"></span><span class="text-zinc-400 ml-1">/100</span></div>
+                            <div class="text-amber-400 text-sm">Strong breakout potential</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast container -->
+    <div id="toast-container" class="fixed bottom-6 right-6 z-[200] space-y-2"></div>
+
+    <script>
+        // Tailwind script configuration
+        function initTailwind() {
+            document.documentElement.style.setProperty('--accent', '#22d3ee');
+            
+            tailwind.config = {
+                theme: {
+                    extend: {
+                        fontFamily: {
+                            'display': ['Space Grotesk', 'Inter', 'system-ui', 'sans-serif']
+                        }
+                    }
+                }
+            };
+        }
+
+        // Global state
+        let currentView = 'overview';
+        let currentLeaderboardPosts = [];
+        let currentSortKey = 'impressions';
+        let currentSortDir = 'desc';
+        let currentTag = '';
+        let currentTagData = null;
+        let charts = {};
+        let currentUserAnalyzed = null;
+        
+        // Mock data
+        let mockInfluencers = [
+            { id: 1, handle: "VitalikButerin", name: "Vitalik Buterin", avatar: "https://i.pravatar.cc/128?u=vitalik", followers: 5200000, engagement: 8.4, impressions: 1240000, category: "crypto", verified: true, country: "Canada", bio: "Ethereum co-founder. Working on zk tech & future of decentralized society.", posts: 1240, avgImpressions: 890000 },
+            { id: 2, handle: "eagle_wagmi", name: "Eagle Wagmi", avatar: "https://i.pravatar.cc/128?u=eagle_wagmi", followers: 184200, engagement: 6.9, impressions: 312000, category: "crypto", verified: true, country: "Nigeria", bio: "Building in public. Crypto, tech & African innovation.", posts: 892, avgImpressions: 124000 },
+            { id: 3, handle: "CryptoCred", name: "Cred", avatar: "https://i.pravatar.cc/128?u=cred", followers: 1240000, engagement: 4.2, impressions: 680000, category: "crypto", verified: true, country: "USA", bio: "On-chain analyst & educator.", posts: 3200, avgImpressions: 410000 },
+            { id: 4, handle: "solana", name: "Solana", avatar: "https://i.pravatar.cc/128?u=solana", followers: 3100000, engagement: 5.8, impressions: 920000, category: "crypto", verified: true, country: "USA", bio: "Official Solana account.", posts: 18400, avgImpressions: 1450000 },
+            { id: 5, handle: "ai_for_good", name: "AI For Good", avatar: "https://i.pravatar.cc/128?u=aiforgood", followers: 284000, engagement: 9.1, impressions: 245000, category: "ai", verified: false, country: "UK", bio: "Exploring positive applications of AI.", posts: 620, avgImpressions: 98000 },
+            { id: 6, handle: "pepe", name: "Pepe", avatar: "https://i.pravatar.cc/128?u=pepe", followers: 890000, engagement: 12.4, impressions: 1540000, category: "memecoin", verified: true, country: "Internet", bio: "The most memeable memecoin.", posts: 420, avgImpressions: 2100000 },
+            { id: 7, handle: "ansem", name: "Ansem", avatar: "https://i.pravatar.cc/128?u=ansem", followers: 680000, engagement: 14.2, impressions: 1890000, category: "memecoin", verified: true, country: "USA", bio: "Founder @Ansem. $ANSEM maxi.", posts: 3100, avgImpressions: 980000 },
+            { id: 8, handle: "sama", name: "Sam Altman", avatar: "https://i.pravatar.cc/128?u=sama", followers: 8200000, engagement: 3.1, impressions: 2100000, category: "ai", verified: true, country: "USA", bio: "CEO OpenAI. Interested in safe AGI.", posts: 980, avgImpressions: 1650000 },
+            { id: 9, handle: "pudgypenguins", name: "Pudgy Penguins", avatar: "https://i.pravatar.cc/128?u=pudgy", followers: 1240000, engagement: 7.6, impressions: 540000, category: "nft", verified: true, country: "USA", bio: "The official Pudgy Penguins account.", posts: 2450, avgImpressions: 320000 },
+            { id: 10, handle: "web3_gaming", name: "Web3 Gaming Hub", avatar: "https://i.pravatar.cc/128?u=web3gaming", followers: 92000, engagement: 5.4, impressions: 87000, category: "gaming", verified: false, country: "Singapore", bio: "Covering the best in blockchain gaming daily.", posts: 1840, avgImpressions: 62000 },
+            { id: 11, handle: "ethereum", name: "ethereum.org", avatar: "https://i.pravatar.cc/128?u=eth", followers: 3400000, engagement: 4.8, impressions: 760000, category: "crypto", verified: true, country: "Switzerland", bio: "Official Ethereum Foundation account.", posts: 12500, avgImpressions: 890000 },
+            { id: 12, handle: "based_tech", name: "Based Tech", avatar: "https://i.pravatar.cc/128?u=based", followers: 145000, engagement: 8.9, impressions: 134000, category: "ai", verified: true, country: "Nigeria", bio: "AI x Crypto. Building the future from Lagos.", posts: 740, avgImpressions: 98000 }
+        ];
+
+        let savedCollections = [];
+        let activeAlerts = [];
+        let recentNotifications = [];
+
+        function loadFromLocalStorage() {
+            try {
+                const saved = localStorage.getItem('trendscope_collections');
+                if (saved) savedCollections = JSON.parse(saved);
+                
+                const alerts = localStorage.getItem('trendscope_alerts');
+                if (alerts) activeAlerts = JSON.parse(alerts);
+                
+                // Seed defaults if empty
+                if (savedCollections.length === 0) {
+                    savedCollections = [
+                        { id: 1, name: "Core Watchlist", type: "tags", items: ["$BTC", "$ETH", "#Solana", "$ANSEM"] },
+                        { id: 2, name: "AI & Future Tech", type: "tags", items: ["#AI", "$FET", "$TAO"] },
+                        { id: 3, name: "Influencers I Track", type: "users", items: ["@VitalikButerin", "@eagle_wagmi", "@CryptoCred"] }
+                    ];
+                    localStorage.setItem('trendscope_collections', JSON.stringify(savedCollections));
+                }
+                
+                if (activeAlerts.length === 0) {
+                    activeAlerts = [
+                        { id: 1, type: "hashtag", value: "#Solana", condition: "mentions > 25k", active: true, lastTriggered: "2h ago" },
+                        { id: 2, type: "cashtag", value: "$ANSEM", condition: "impressions > 500k", active: true, lastTriggered: "14m ago" },
+                        { id: 3, type: "user", value: "@VitalikButerin", condition: "new post", active: false, lastTriggered: "Never" },
+                        { id: 4, type: "keyword", value: "AI agents", condition: "influencer mention", active: true, lastTriggered: "Yesterday" }
+                    ];
+                    localStorage.setItem('trendscope_alerts', JSON.stringify(activeAlerts));
+                }
+            } catch(e) {}
+        }
+
+        function saveToLocalStorage() {
+            localStorage.setItem('trendscope_collections', JSON.stringify(savedCollections));
+            localStorage.setItem('trendscope_alerts', JSON.stringify(activeAlerts));
+        }
+
+        // Generate realistic posts for a tag
+        function generateMockPostsForTag(tag, count = 14) {
+            const isCashtag = tag.startsWith('$');
+            const posts = [];
+            const baseImpressions = tag.toLowerCase().includes('btc') || tag.toLowerCase().includes('eth') || tag.toLowerCase().includes('sol') ? 850000 : 180000;
+            
+            const templates = isCashtag ? [
+                `Just loaded my bags with ${tag}. This one feels different 🚀`,
+                `${tag} showing massive accumulation. Smart money is in early.`,
+                `The chart on ${tag} is textbook. Next leg up incoming.`,
+                `Who else is still holding ${tag}? Diamond hands only 💎`,
+                `${tag} breaking resistance levels like it's nothing. LFG!`,
+                `New all-time high for ${tag} this week? Very possible.`,
+                `The volume on ${tag} is insane right now. Something big is brewing.`,
+                `If you aren't in ${tag} yet, you're going to regret it.`,
+                `${tag} community is one of the strongest I've seen.`,
+                `Technical analysis on ${tag} looks extremely bullish.`
+            ] : [
+                `The ${tag} ecosystem continues to impress me. Builders shipping daily.`,
+                `Just published a deep dive into ${tag} and why it's undervalued.`,
+                `${tag} adoption metrics are going parabolic. This is the future.`,
+                `Why ${tag} is the only narrative that matters in 2026.`,
+                `Huge announcement coming for the ${tag} community. Stay tuned.`,
+                `The innovation happening in ${tag} right now is unmatched.`,
+                `Can't stop thinking about how ${tag} will change everything.`,
+                `${tag} is quietly building the most important infrastructure in crypto.`,
+                `Everyone sleeping on ${tag}. Not me though.`,
+                `Real utility > hype. That's why I'm all in on ${tag}.`
+            ];
+            
+            for (let i = 0; i < count; i++) {
+                const influencer = mockInfluencers[Math.floor(Math.random() * mockInfluencers.length)];
+                const likes = Math.floor(Math.random() * (baseImpressions / 18)) + 1200;
+                const reposts = Math.floor(likes * (0.2 + Math.random() * 0.6));
+                const replies = Math.floor(likes * (0.08 + Math.random() * 0.25));
+                const bookmarks = Math.floor(likes * 0.12);
+                
+                const impressions = Math.floor(
+                    likes * (4.2 + Math.random() * 6.5) + 
+                    reposts * 18 + replies * 9 + 
+                    (influencer.followers / 180)
+                );
+                
+                const engagementRate = ((likes + reposts * 1.8 + replies * 2.5) / impressions * 100);
+                
+                const hoursAgo = Math.floor(Math.random() * 23) + 1;
+                const timestamp = new Date(Date.now() - hoursAgo * 3600000);
+                
+                const text = templates[Math.floor(Math.random() * templates.length)];
+                
+                posts.push({
+                    id: Date.now() + i,
+                    username: influencer.name,
+                    handle: influencer.handle,
+                    avatar: influencer.avatar,
+                    verified: influencer.verified,
+                    followers: influencer.followers,
+                    text: text,
+                    likes: likes,
+                    reposts: reposts,
+                    replies: replies,
+                    bookmarks: bookmarks,
+                    impressions: impressions,
+                    engagementRate: parseFloat(engagementRate.toFixed(2)),
+                    timestamp: timestamp,
+                    tag: tag
+                });
+            }
+            
+            // Sort by impressions desc by default
+            posts.sort((a, b) => b.impressions - a.impressions);
+            return posts;
+        }
+
+        function formatNumber(num) {
+            if (num >= 1000000000) return (num / 1000000000).toFixed(1) + 'B';
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num >= 10000) return Math.floor(num / 1000) + 'k';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'k';
+            return num.toLocaleString();
+        }
+
+        function formatTimeAgo(date) {
+            const hours = Math.floor((Date.now() - date.getTime()) / 3600000);
+            if (hours < 1) return 'Just now';
+            if (hours === 1) return '1h ago';
+            return hours + 'h ago';
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `px-5 py-3 rounded-2xl shadow-xl flex items-center gap-x-3 text-sm border ${type === 'success' ? 'bg-emerald-900/90 border-emerald-700 text-emerald-200' : 'bg-zinc-800 border-zinc-600'}`;
+            toast.innerHTML = `
+                <div class="flex items-center gap-x-3">
+                    ${type === 'success' ? '<i class="fa-solid fa-check-circle text-emerald-400"></i>' : '<i class="fa-solid fa-info-circle"></i>'}
+                    <span>${message}</span>
+                </div>
+            `;
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.transition = 'all 0.3s ease';
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 200);
+            }, 2800);
+        }
+
+        function switchView(view) {
+            // Hide all views
+            document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+            
+            // Show target
+            const target = document.getElementById('view-' + view);
+            if (target) target.classList.remove('hidden');
+            
+            currentView = view;
+            
+            // Update sidebar active states
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active', 'bg-zinc-800');
+                if (item.getAttribute('onclick') && item.getAttribute('onclick').includes(view)) {
+                    item.classList.add('active', 'bg-zinc-800');
+                }
+            });
+            
+            // View-specific initializations
+            if (view === 'trending' && document.getElementById('trending-cashtags-grid').children.length === 0) {
+                renderTrendingDashboard();
+            }
+            
+            if (view === 'discovery' && document.getElementById('influencer-grid').children.length === 0) {
+                renderInfluencerDiscovery();
+            }
+            
+            if (view === 'alerts') {
+                renderActiveAlerts();
+            }
+            
+            if (view === 'collections') {
+                renderCollections();
+            }
+            
+            if (view === 'heatmap' && document.getElementById('heatmap-regions').children.length === 0) {
+                renderHeatmap();
+            }
+            
+            if (view === 'overview') {
+                renderQuickTrending();
+            }
+        }
+
+        function performSearch() {
+            const input = document.getElementById('search-input').value.trim();
+            if (!input) {
+                showToast('Please enter a hashtag or cashtag', 'info');
+                return;
+            }
+            
+            let tag = input;
+            if (!tag.startsWith('#') && !tag.startsWith('$')) {
+                // Auto-detect: default to $ for single word uppercase, # otherwise
+                if (/^[A-Z0-9]+$/.test(tag) || tag.toUpperCase() === tag) {
+                    tag = '$' + tag.toUpperCase();
+                } else {
+                    tag = '#' + tag;
+                }
+            }
+            
+            currentTag = tag;
+            
+            // Generate fresh posts
+            currentLeaderboardPosts = generateMockPostsForTag(tag, 16);
+            
+            // Show results UI
+            document.getElementById('search-results-header').classList.remove('hidden');
+            document.getElementById('no-results').classList.add('hidden');
+            
+            // Update header pill and stats
+            const pill = document.getElementById('search-tag-pill');
+            pill.innerHTML = `<span class="font-mono">${tag}</span>`;
+            pill.className = `inline-flex items-center px-5 h-9 rounded-2xl text-base font-semibold ${tag.startsWith('$') ? 'bg-emerald-400/10 text-emerald-400 border border-emerald-400/30' : 'bg-violet-400/10 text-violet-400 border border-violet-400/30'}`;
+            
+            const totalImpressions = currentLeaderboardPosts.reduce((sum, p) => sum + p.impressions, 0);
+            document.getElementById('search-post-count').textContent = currentLeaderboardPosts.length.toLocaleString() + '+';
+            document.getElementById('search-impressions').textContent = formatNumber(totalImpressions);
+            
+            // Render table
+            renderLeaderboardTable(currentLeaderboardPosts);
+            
+            // Switch to search view if not already
+            if (currentView !== 'search') {
+                switchView('search');
+            }
+            
+            // Show toast
+            showToast(`Analyzing ${tag} • ${currentLeaderboardPosts.length} top posts loaded`);
+        }
+
+        function renderLeaderboardTable(posts) {
+            const tbody = document.getElementById('leaderboard-body');
+            tbody.innerHTML = '';
+            
+            const sortedPosts = [...posts].sort((a, b) => {
+                let valA, valB;
+                if (currentSortKey === 'impressions') { valA = a.impressions; valB = b.impressions; }
+                else if (currentSortKey === 'likes') { valA = a.likes; valB = b.likes; }
+                else if (currentSortKey === 'reposts') { valA = a.reposts; valB = b.reposts; }
+                else if (currentSortKey === 'engagement') { valA = a.engagementRate; valB = b.engagementRate; }
+                else if (currentSortKey === 'newest') { valA = a.timestamp.getTime(); valB = b.timestamp.getTime(); }
+                
+                return currentSortDir === 'desc' ? valB - valA : valA - valB;
+            });
+            
+            sortedPosts.forEach((post, index) => {
+                const row = document.createElement('tr');
+                row.className = `leaderboard-row cursor-pointer border-b border-zinc-800 last:border-none`;
+                
+                const verifiedHTML = post.verified ? 
+                    `<i class="fa-solid fa-check-circle text-cyan-400"></i>` : 
+                    `<span class="text-zinc-600">—</span>`;
+                
+                row.innerHTML = `
+                    <td class="py-4 px-6 font-mono text-xs text-zinc-400">${index + 1}</td>
+                    <td class="py-4 px-6 pr-8">
+                        <div class="post-preview text-sm text-zinc-200 leading-snug">${post.text}</div>
+                        <div class="text-[10px] text-zinc-500 mt-1 font-mono">${post.tag}</div>
+                    </td>
+                    <td class="py-4 px-6">
+                        <div class="flex items-center gap-x-3">
+                            <img src="${post.avatar}" class="w-8 h-8 rounded-2xl ring-1 ring-zinc-700 flex-shrink-0" />
+                            <div class="min-w-0">
+                                <div class="font-semibold text-sm flex items-center gap-x-1.5">${post.username} ${post.verified ? '<i class="fa-solid fa-check-circle text-cyan-400 text-xs"></i>' : ''}</div>
+                                <div class="font-mono text-xs text-zinc-400">@${post.handle}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-4 px-6 text-right font-mono text-sm">${formatNumber(post.followers)}</td>
+                    <td class="py-4 px-6 text-center">${verifiedHTML}</td>
+                    <td class="py-4 px-6 text-right font-semibold font-mono text-emerald-400">${formatNumber(post.impressions)}</td>
+                    <td class="py-4 px-6 text-right font-mono">${formatNumber(post.likes)}</td>
+                    <td class="py-4 px-6 text-right font-mono">${formatNumber(post.reposts)}</td>
+                    <td class="py-4 px-6 text-right font-mono text-zinc-400">${formatNumber(post.replies)}</td>
+                    <td class="py-4 px-6 text-right">
+                        <span class="font-semibold ${post.engagementRate > 6 ? 'text-emerald-400' : post.engagementRate > 3.5 ? 'text-amber-400' : 'text-zinc-400'}">${post.engagementRate}%</span>
+                    </td>
+                    <td class="py-4 px-6 text-right text-xs text-zinc-400 font-mono pr-6">${formatTimeAgo(post.timestamp)}</td>
+                `;
+                
+                // Click handlers
+                row.onclick = () => showPostModalFromData(post);
+                
+                // Username click opens user analytics
+                const userCell = row.querySelector('td:nth-child(3)');
+                if (userCell) {
+                    userCell.onclick = (e) => {
+                        e.stopImmediatePropagation();
+                        analyzeSpecificUser(post.handle);
+                    };
+                }
+                
+                tbody.appendChild(row);
+            });
+            
+            document.getElementById('showing-count').textContent = sortedPosts.length;
+            document.getElementById('total-count').textContent = (sortedPosts.length * 850).toLocaleString();
+        }
+
+        function sortLeaderboard(key) {
+            if (currentSortKey === key) {
+                currentSortDir = currentSortDir === 'desc' ? 'asc' : 'desc';
+            } else {
+                currentSortKey = key;
+                currentSortDir = key === 'newest' ? 'desc' : 'desc';
+            }
+            
+            // Update active button styles
+            document.querySelectorAll('.sort-btn').forEach(btn => {
+                btn.classList.remove('active', 'bg-zinc-700', 'text-white');
+                if (btn.dataset.sort === key) {
+                    btn.classList.add('active', 'bg-zinc-700', 'text-white');
+                }
+            });
+            
+            if (currentLeaderboardPosts.length > 0) {
+                renderLeaderboardTable(currentLeaderboardPosts);
+            }
+        }
+
+        function exportToCSV() {
+            if (!currentLeaderboardPosts.length) {
+                showToast('No data to export', 'info');
+                return;
+            }
+            
+            let csv = 'Rank,Username,Handle,Followers,Verified,Impressions,Likes,Reposts,Replies,EngagementRate,Posted,Text\n';
+            
+            currentLeaderboardPosts.forEach((post, i) => {
+                csv += `${i+1},"${post.username}",${post.handle},${post.followers},${post.verified},${post.impressions},${post.likes},${post.reposts},${post.replies},${post.engagementRate},${post.timestamp.toISOString()},"${post.text.replace(/"/g, '""')}"\n`;
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `trendscope_${currentTag.replace('#','').replace('$','')}_leaderboard.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            showToast('CSV downloaded successfully');
+            
+            // Simulate Pro feature gate
+            setTimeout(() => {
+                if (Math.random() > 0.6) {
+                    showToast('Pro tip: Unlimited exports + historical CSVs available on Pro plan', 'info');
+                }
+            }, 1600);
+        }
+
+        function randomTrendingSearch() {
+            const popular = ['$ANSEM', '$BTC', '#Solana', '$ETH', '#AI', '$PEPE', '#Web3', '$FET'];
+            const randomTag = popular[Math.floor(Math.random() * popular.length)];
+            document.getElementById('search-input').value = randomTag;
+            performSearch();
+        }
+
+        function renderQuickTrending() {
+            // Quick cashtags in overview
+            const container = document.getElementById('quick-cashtags');
+            container.innerHTML = '';
+            
+            const quickTags = [
+                { tag: '$ANSEM', mentions: '184k', growth: '+42' },
+                { tag: '$BTC', mentions: '892k', growth: '+12' },
+                { tag: '$ETH', mentions: '421k', growth: '+8' },
+                { tag: '$PEPE', mentions: '97k', growth: '+67' }
+            ];
+            
+            quickTags.forEach(item => {
+                const el = document.createElement('div');
+                el.className = `flex items-center justify-between px-4 py-[9px] hover:bg-zinc-800 transition-colors rounded-2xl cursor-pointer`;
+                el.innerHTML = `
+                    <div class="flex items-center gap-x-3">
+                        <span class="font-mono font-semibold text-emerald-400">${item.tag}</span>
+                    </div>
+                    <div class="flex items-center gap-x-4 text-xs">
+                        <span class="font-mono text-zinc-400">${item.mentions}</span>
+                        <span class="font-medium text-emerald-400">+${item.growth}%</span>
+                    </div>
+                `;
+                el.onclick = () => {
+                    document.getElementById('search-input').value = item.tag;
+                    performSearch();
+                };
+                container.appendChild(el);
+            });
+            
+            // Quick hashtags
+            const hashContainer = document.getElementById('quick-hashtags');
+            hashContainer.innerHTML = '';
+            
+            const quickHashes = ['#Solana', '#AI', '#Web3Gaming', '#Crypto'];
+            quickHashes.forEach(tag => {
+                const pill = document.createElement('div');
+                pill.className = `tag-pill cursor-pointer px-4 py-1 text-sm rounded-2xl border border-violet-400/30 bg-violet-400/5 text-violet-300 hover:bg-violet-400/10`;
+                pill.textContent = tag;
+                pill.onclick = () => {
+                    document.getElementById('search-input').value = tag;
+                    performSearch();
+                };
+                hashContainer.appendChild(pill);
+            });
+        }
+
+        function renderTrendingDashboard() {
+            // Cashtags grid
+            const cashtagGrid = document.getElementById('trending-cashtags-grid');
+            cashtagGrid.innerHTML = '';
+            
+            const trendingCashtags = [
+                { tag: '$ANSEM', mentions: '184.2k', growth: 42.3, impressions: '2.1B' },
+                { tag: '$BTC', mentions: '892.4k', growth: 11.8, impressions: '14.8B' },
+                { tag: '$PEPE', mentions: '97.1k', growth: 67.4, impressions: '1.4B' },
+                { tag: '$ETH', mentions: '421.8k', growth: 7.9, impressions: '8.2B' },
+                { tag: '$FET', mentions: '64.3k', growth: 29.1, impressions: '890M' },
+                { tag: '$SOL', mentions: '312.6k', growth: 18.4, impressions: '5.1B' }
+            ];
+            
+            trendingCashtags.forEach(item => {
+                const card = document.createElement('div');
+                card.className = `glass border border-zinc-700 hover:border-emerald-400/40 cursor-pointer transition-all rounded-3xl p-4 modern-card`;
+                card.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="font-mono text-xl font-bold text-emerald-400">${item.tag}</div>
+                            <div class="text-xs text-zinc-400 mt-px">${item.mentions} posts</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-emerald-400 text-sm font-semibold">+${item.growth}%</div>
+                            <div class="text-[10px] text-zinc-500">${item.impressions}</div>
+                        </div>
+                    </div>
+                    <div class="mt-4 h-1.5 bg-zinc-800 rounded">
+                        <div class="h-1.5 bg-gradient-to-r from-emerald-400 to-cyan-400 rounded" style="width: ${Math.min(item.growth + 20, 95)}%"></div>
+                    </div>
+                `;
+                card.onclick = () => {
+                    document.getElementById('search-input').value = item.tag;
+                    performSearch();
+                };
+                cashtagGrid.appendChild(card);
+            });
+            
+            // Hashtags list
+            const hashList = document.getElementById('trending-hashtags-list');
+            hashList.innerHTML = '';
+            
+            const trendingHashes = [
+                { tag: '#Solana', posts: '421k', growth: 24 },
+                { tag: '#AI', posts: '289k', growth: 51 },
+                { tag: '#Web3', posts: '167k', growth: 14 },
+                { tag: '#Crypto', posts: '312k', growth: 9 },
+                { tag: '#Bitcoin', posts: '198k', growth: 6 }
+            ];
+            
+            trendingHashes.forEach(item => {
+                const row = document.createElement('div');
+                row.className = `flex items-center justify-between px-1 py-[7px] hover:bg-zinc-800/60 transition-colors cursor-pointer rounded-xl px-3`;
+                row.innerHTML = `
+                    <div class="font-medium">${item.tag}</div>
+                    <div class="flex items-center gap-x-4 text-xs">
+                        <span class="font-mono text-zinc-400">${item.posts}</span>
+                        <span class="font-semibold text-emerald-400 w-11 text-right">+${item.growth}%</span>
+                    </div>
+                `;
+                row.onclick = () => {
+                    document.getElementById('search-input').value = item.tag;
+                    performSearch();
+                };
+                hashList.appendChild(row);
+            });
+            
+            // Fastest growing
+            const fastList = document.getElementById('fastest-growing-list');
+            fastList.innerHTML = '';
+            
+            const fastest = [
+                { tag: '$ANSEM', growth: '+142%', reason: 'Viral narrative shift' },
+                { tag: '#AIagents', growth: '+89%', reason: 'New OpenAI announcement' },
+                { tag: '$TAO', growth: '+64%', reason: 'Subnet hype cycle' }
+            ];
+            
+            fastest.forEach(item => {
+                const el = document.createElement('div');
+                el.className = `flex justify-between items-center px-3 py-3 hover:bg-zinc-800 transition rounded-2xl cursor-pointer`;
+                el.innerHTML = `
+                    <div>
+                        <span class="font-semibold">${item.tag}</span>
+                        <span class="ml-3 text-xs text-zinc-400">${item.reason}</span>
+                    </div>
+                    <div class="font-mono text-emerald-400 font-bold">${item.growth}</div>
+                `;
+                el.onclick = () => {
+                    document.getElementById('search-input').value = item.tag;
+                    performSearch();
+                };
+                fastList.appendChild(el);
+            });
+            
+            // Viral posts
+            renderViralPosts();
+        }
+
+        function renderViralPosts() {
+            const container = document.getElementById('viral-posts-grid');
+            container.innerHTML = '';
+            
+            const viralPosts = generateMockPostsForTag('$ANSEM', 3);
+            
+            viralPosts.forEach((post, idx) => {
+                const card = document.createElement('div');
+                card.className = `glass border border-zinc-700 rounded-3xl p-5 cursor-pointer modern-card`;
+                card.innerHTML = `
+                    <div class="flex items-center gap-x-3 mb-4">
+                        <img src="${post.avatar}" class="w-9 h-9 rounded-2xl">
+                        <div>
+                            <div class="font-semibold flex items-center">${post.username} ${post.verified ? '<i class="fa-solid fa-check-circle text-cyan-400 ml-1 text-xs"></i>' : ''}</div>
+                            <div class="text-xs text-zinc-400">@${post.handle}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="tweet-text mb-5 text-sm">${post.text}</div>
+                    
+                    <div class="flex justify-between text-xs">
+                        <div class="flex gap-x-4">
+                            <div><span class="font-bold text-emerald-400">${formatNumber(post.likes)}</span> <span class="text-zinc-400">likes</span></div>
+                            <div><span class="font-bold">${formatNumber(post.reposts)}</span> <span class="text-zinc-400">reposts</span></div>
+                        </div>
+                        <div class="font-mono text-emerald-400">${formatNumber(post.impressions)} imp</div>
+                    </div>
+                `;
+                card.onclick = () => showPostModalFromData(post);
+                container.appendChild(card);
+            });
+        }
+
+        function filterTrendingByCategory(category) {
+            const searchInput = document.getElementById('search-input');
+            
+            let tag = '';
+            if (category === 'memecoin') tag = '$ANSEM';
+            else if (category === 'ai') tag = '#AI';
+            else if (category === 'nft') tag = '#BAYC';
+            else if (category === 'gaming') tag = '#Web3Gaming';
+            else if (category === 'crypto') tag = '#Solana';
+            
+            searchInput.value = tag;
+            performSearch();
+        }
+
+        function renderInfluencerDiscovery() {
+            const grid = document.getElementById('influencer-grid');
+            grid.innerHTML = '';
+            
+            // Create category pills
+            const catContainer = document.getElementById('category-filters');
+            if (catContainer.children.length === 0) {
+                const categories = ['crypto', 'ai', 'gaming', 'memecoin', 'nft'];
+                categories.forEach(cat => {
+                    const pill = document.createElement('div');
+                    pill.className = `px-3 py-1 text-xs rounded-2xl border cursor-pointer transition-all active-pill border-zinc-600 hover:border-zinc-400`;
+                    pill.textContent = cat.charAt(0).toUpperCase() + cat.slice(1);
+                    pill.dataset.category = cat;
+                    pill.onclick = () => {
+                        pill.classList.toggle('!border-cyan-400');
+                        pill.classList.toggle('bg-cyan-400/10');
+                        updateDiscoveryFilters();
+                    };
+                    catContainer.appendChild(pill);
+                });
+            }
+            
+            renderFilteredInfluencers();
+        }
+
+        function updateDiscoveryFilters() {
+            renderFilteredInfluencers();
+        }
+
+        function renderFilteredInfluencers() {
+            const grid = document.getElementById('influencer-grid');
+            grid.innerHTML = '';
+            
+            const minFollowers = parseInt(document.getElementById('followers-slider').value);
+            const minEngagement = parseFloat(document.getElementById('engagement-slider').value);
+            const minImpressions = parseInt(document.getElementById('impressions-slider').value);
+            const verifiedOnly = document.getElementById('verified-only').checked;
+            
+            // Update value displays
+            document.getElementById('followers-val').textContent = formatNumber(minFollowers);
+            document.getElementById('engagement-val').textContent = minEngagement + '%';
+            document.getElementById('impr-val').textContent = formatNumber(minImpressions);
+            
+            // Get active categories
+            const activeCats = [];
+            document.querySelectorAll('#category-filters > div').forEach(pill => {
+                if (pill.classList.contains('!border-cyan-400')) {
+                    activeCats.push(pill.dataset.category);
+                }
+            });
+            
+            let filtered = mockInfluencers.filter(inf => {
+                if (inf.followers < minFollowers) return false;
+                if (inf.engagement < minEngagement) return false;
+                if (inf.impressions < minImpressions) return false;
+                if (verifiedOnly && !inf.verified) return false;
+                if (activeCats.length > 0 && !activeCats.includes(inf.category)) return false;
+                return true;
+            });
+            
+            document.getElementById('discovery-count').textContent = filtered.length;
+            
+            filtered.forEach(inf => {
+                const card = document.createElement('div');
+                card.className = `glass border border-zinc-700 hover:border-zinc-400 transition-all rounded-3xl p-5 cursor-pointer modern-card`;
+                
+                card.innerHTML = `
+                    <div class="flex gap-x-4">
+                        <img src="${inf.avatar}" class="w-14 h-14 rounded-2xl flex-shrink-0 ring-2 ring-zinc-800" />
+                        
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-start justify-between">
+                                <div>
+                                    <div class="font-semibold flex items-center gap-x-1.5">${inf.name} ${inf.verified ? '<i class="fa-solid fa-check-circle text-cyan-400 text-sm"></i>' : ''}</div>
+                                    <div class="font-mono text-xs text-zinc-400">@${inf.handle}</div>
+                                </div>
+                                <div class="text-xs px-2 py-0.5 rounded bg-zinc-800 text-center">${inf.category}</div>
+                            </div>
+                            
+                            <div class="mt-4 flex justify-between text-xs">
+                                <div>
+                                    <div class="font-mono text-lg leading-none font-semibold">${formatNumber(inf.followers)}</div>
+                                    <div class="text-zinc-400">followers</div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="font-semibold text-emerald-400">${inf.engagement}%</div>
+                                    <div class="text-zinc-400">eng. rate</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 pt-4 border-t border-zinc-700 flex items-center justify-between text-xs">
+                        <div class="text-zinc-400">${formatNumber(inf.impressions)} daily imp.</div>
+                        
+                        <div class="flex gap-x-1.5">
+                            <button onclick="event.stopImmediatePropagation(); viewInfluencerDetail(${inf.id});" class="px-3 py-1 text-xs border border-zinc-600 hover:bg-zinc-800 rounded-xl">View</button>
+                            <button onclick="event.stopImmediatePropagation(); addInfluencerToWatchlist(${inf.id});" class="px-3 py-1 text-xs bg-white text-zinc-950 font-medium rounded-xl">Track</button>
+                        </div>
+                    </div>
+                `;
+                
+                card.onclick = () => analyzeSpecificUser(inf.handle);
+                grid.appendChild(card);
+            });
+        }
+
+        function resetDiscoveryFilters() {
+            document.getElementById('followers-slider').value = 50000;
+            document.getElementById('engagement-slider').value = 3.5;
+            document.getElementById('impressions-slider').value = 120000;
+            document.getElementById('verified-only').checked = true;
+            
+            document.querySelectorAll('#category-filters > div').forEach(p => {
+                p.classList.remove('!border-cyan-400', 'bg-cyan-400/10');
+            });
+            
+            updateDiscoveryFilters();
+        }
+
+        function viewInfluencerDetail(id) {
+            const inf = mockInfluencers.find(i => i.id === id);
+            if (!inf) return;
+            
+            const modalHTML = `
+                <div class="fixed inset-0 bg-black/70 z-[110] flex items-center justify-center p-4" onclick="this.remove()">
+                    <div onclick="event.stopImmediatePropagation()" class="glass border border-zinc-700 w-full max-w-lg rounded-3xl overflow-hidden">
+                        <div class="p-7">
+                            <div class="flex gap-x-5">
+                                <img src="${inf.avatar}" class="w-20 h-20 rounded-3xl ring-4 ring-zinc-800" />
+                                
+                                <div class="flex-1 pt-1">
+                                    <div class="flex items-center gap-x-2">
+                                        <span class="text-2xl font-semibold">${inf.name}</span>
+                                        ${inf.verified ? '<i class="fa-solid fa-check-circle text-cyan-400 text-xl"></i>' : ''}
+                                    </div>
+                                    <div class="font-mono text-cyan-400">@${inf.handle}</div>
+                                    
+                                    <div class="mt-4 flex gap-x-6 text-sm">
+                                        <div><span class="font-semibold">${formatNumber(inf.followers)}</span> <span class="text-xs text-zinc-400">followers</span></div>
+                                        <div><span class="font-semibold text-emerald-400">${inf.engagement}%</span> <span class="text-xs text-zinc-400">eng</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-5 text-sm text-zinc-300">${inf.bio}</div>
+                            
+                            <div class="mt-6 grid grid-cols-3 gap-3 text-center text-xs">
+                                <div class="bg-zinc-900 border border-zinc-700 rounded-2xl py-3">
+                                    <div class="font-mono text-xl font-bold">${formatNumber(inf.impressions)}</div>
+                                    <div class="text-zinc-400">Daily Imp.</div>
+                                </div>
+                                <div class="bg-zinc-900 border border-zinc-700 rounded-2xl py-3">
+                                    <div class="font-mono text-xl font-bold">${inf.posts}</div>
+                                    <div class="text-zinc-400">Posts</div>
+                                </div>
+                                <div class="bg-zinc-900 border border-zinc-700 rounded-2xl py-3">
+                                    <div class="font-mono text-xl font-bold">${inf.avgImpressions ? formatNumber(inf.avgImpressions) : '—'}</div>
+                                    <div class="text-zinc-400">Avg/Post</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="border-t border-zinc-700 p-4 flex gap-x-3 bg-zinc-900">
+                            <button onclick="analyzeSpecificUser('${inf.handle}'); this.closest('.fixed').remove();" class="flex-1 py-3 text-sm font-semibold border border-zinc-600 rounded-2xl hover:bg-zinc-800">View Full Analytics</button>
+                            <button onclick="addInfluencerToWatchlist(${inf.id}); this.closest('.fixed').remove();" class="flex-1 py-3 text-sm font-semibold bg-white text-zinc-950 rounded-2xl">Add to Watchlist</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+        }
+
+        function addInfluencerToWatchlist(id) {
+            const inf = mockInfluencers.find(i => i.id === id);
+            if (!inf) return;
+            
+            const handle = '@' + inf.handle;
+            
+            // Check if already in a collection
+            let added = false;
+            savedCollections.forEach(col => {
+                if (col.type === 'users' && !col.items.includes(handle)) {
+                    col.items.push(handle);
+                    added = true;
+                }
+            });
+            
+            if (!added) {
+                // Create new or add to first users collection
+                const usersCol = savedCollections.find(c => c.type === 'users');
+                if (usersCol) {
+                    usersCol.items.push(handle);
+                } else {
+                    savedCollections.push({ id: Date.now(), name: "Tracked Influencers", type: "users", items: [handle] });
+                }
+            }
+            
+            saveToLocalStorage();
+            showToast(`${handle} added to your watchlist`);
+            
+            // If collections view is open, refresh it
+            if (!document.getElementById('view-collections').classList.contains('hidden')) {
+                renderCollections();
+            }
+        }
+
+        function analyzeUser() {
+            const input = document.getElementById('user-analytics-input').value.trim();
+            if (!input) return;
+            analyzeSpecificUser(input.replace('@', ''));
+        }
+        
+        function analyzeSpecificUser(handle) {
+            const user = mockInfluencers.find(u => u.handle.toLowerCase() === handle.toLowerCase());
+            
+            document.getElementById('view-user-analytics').classList.remove('hidden');
+            document.querySelectorAll('.view').forEach(v => {
+                if (v.id !== 'view-user-analytics') v.classList.add('hidden');
+            });
+            currentView = 'user-analytics';
+            
+            // Update header
+            const header = document.getElementById('user-profile-header');
+            header.classList.remove('hidden');
+            
+            const nameEl = document.getElementById('user-name-header');
+            const handleEl = document.getElementById('user-handle-header');
+            const avatarEl = document.getElementById('user-avatar-large');
+            const followersEl = document.getElementById('user-followers');
+            const growthEl = document.getElementById('user-growth');
+            const verifiedEl = document.getElementById('user-verified-header');
+            
+            if (user) {
+                nameEl.textContent = user.name;
+                handleEl.textContent = '@' + user.handle;
+                avatarEl.innerHTML = `<img src="${user.avatar}" class="w-full h-full object-cover">`;
+                followersEl.textContent = formatNumber(user.followers);
+                growthEl.innerHTML = `+${Math.floor(Math.random()*18)+4}%`;
+                verifiedEl.innerHTML = user.verified ? `<i class="fa-solid fa-check-circle text-cyan-400 ml-1"></i>` : '';
+                currentUserAnalyzed = user;
+            } else {
+                // Generate plausible data for unknown user
+                nameEl.textContent = handle;
+                handleEl.textContent = '@' + handle;
+                avatarEl.innerHTML = `<div class="w-full h-full bg-zinc-700 flex items-center justify-center text-3xl font-bold">${handle[0].toUpperCase()}</div>`;
+                followersEl.textContent = formatNumber(Math.floor(Math.random() * 850000) + 12000);
+                growthEl.innerHTML = `+${Math.floor(Math.random()*25)+3}%`;
+                verifiedEl.innerHTML = Math.random() > 0.6 ? `<i class="fa-solid fa-check-circle text-cyan-400 ml-1"></i>` : '';
+                currentUserAnalyzed = { handle: handle, name: handle, followers: 124000, engagement: 5.2 };
+            }
+            
+            // KPIs
+            const impressions = user ? user.impressions : Math.floor(Math.random() * 920000) + 85000;
+            document.getElementById('kpi-impressions').textContent = formatNumber(impressions);
+            document.getElementById('kpi-engagement').textContent = (user ? user.engagement : (4 + Math.random() * 6)).toFixed(1) + '%';
+            document.getElementById('kpi-best-time').textContent = ['7-9 PM WAT', '9-11 AM WAT', '2-4 PM WAT'][Math.floor(Math.random()*3)];
+            document.getElementById('kpi-frequency').textContent = (user ? (user.posts / 220).toFixed(1) : (1.8 + Math.random() * 3.4)).toFixed(1);
+            
+            // Top tags used
+            const tagsContainer = document.getElementById('user-top-tags');
+            tagsContainer.innerHTML = '';
+            
+            const usedTags = user && user.category === 'crypto' ? 
+                ['$BTC', '#Solana', '$ETH', '#Web3'] : 
+                ['#AI', '$FET', '#MachineLearning', '$TAO'];
+            
+            usedTags.forEach((tag, idx) => {
+                const count = 42 - idx * 7 + Math.floor(Math.random() * 18);
+                const div = document.createElement('div');
+                div.className = `flex justify-between text-sm py-px px-1 cursor-pointer hover:bg-zinc-800 rounded`;
+                div.innerHTML = `
+                    <span class="font-mono">${tag}</span> 
+                    <span class="font-mono text-zinc-400">${count}×</span>
+                `;
+                div.onclick = () => {
+                    document.getElementById('search-input').value = tag;
+                    performSearch();
+                };
+                tagsContainer.appendChild(div);
+            });
+            
+            // Performance chart
+            renderUserPerformanceChart(impressions);
+            
+            // Top posts
+            renderUserTopPosts(user || {handle: handle});
+        }
+        
+        function renderUserPerformanceChart(baseImpressions) {
+            const canvas = document.getElementById('user-performance-chart');
+            if (charts.userPerf) charts.userPerf.destroy();
+            
+            const labels = ['Jan 15', 'Jan 17', 'Jan 19', 'Jan 21', 'Jan 23', 'Jan 25', 'Jan 27', 'Jan 29'];
+            const data = labels.map((_, i) => Math.floor(baseImpressions * (0.6 + Math.random() * 0.7) * (1 + i * 0.03)));
+            
+            charts.userPerf = new Chart(canvas, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Impressions',
+                        data: data,
+                        borderColor: '#22d3ee',
+                        backgroundColor: 'rgba(103, 232, 249, 0.08)',
+                        borderWidth: 3,
+                        tension: 0.35,
+                        fill: true,
+                        pointRadius: 0,
+                        pointHoverRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
+                    scales: {
+                        x: { grid: { color: '#27272a', tickLength: 4 }, ticks: { color: '#71717a', font: {size: 10} } },
+                        y: { grid: { color: '#27272a' }, ticks: { color: '#71717a', font: {size: 10}, callback: v => formatNumber(v) } }
+                    }
+                }
+            });
+        }
+        
+        function renderUserTopPosts(user) {
+            const container = document.getElementById('user-top-posts');
+            container.innerHTML = '';
+            
+            const posts = generateMockPostsForTag(user.category === 'memecoin' ? '$ANSEM' : '#AI', 2);
+            
+            posts.forEach(post => {
+                const el = document.createElement('div');
+                el.className = `glass border border-zinc-700 p-4 rounded-2xl text-sm cursor-pointer`;
+                el.innerHTML = `
+                    <div class="flex justify-between text-xs mb-2">
+                        <span class="text-emerald-400">${formatNumber(post.impressions)} impressions</span>
+                        <span class="text-zinc-400">${formatTimeAgo(post.timestamp)}</span>
+                    </div>
+                    <div class="line-clamp-3">${post.text}</div>
+                    <div class="flex gap-x-4 mt-3 text-xs text-zinc-400">
+                        <span>${formatNumber(post.likes)} likes</span>
+                        <span>${formatNumber(post.reposts)} reposts</span>
+                    </div>
+                `;
+                el.onclick = () => showPostModalFromData(post);
+                container.appendChild(el);
+            });
+        }
+
+        function addToWatchlistFromUser() {
+            if (!currentUserAnalyzed) return;
+            const handle = '@' + currentUserAnalyzed.handle;
+            
+            let added = false;
+            savedCollections.forEach(col => {
+                if (col.type === 'users' && !col.items.includes(handle)) {
+                    col.items.push(handle);
+                    added = true;
+                }
+            });
+            
+            if (!added) {
+                const usersCol = savedCollections.find(c => c.type === 'users') || savedCollections[0];
+                if (usersCol) usersCol.items.push(handle);
+            }
+            
+            saveToLocalStorage();
+            showToast(`${handle} added to watchlist`);
+        }
+
+        function showCreateAlertModal() {
+            const modal = document.createElement('div');
+            modal.className = `fixed inset-0 bg-black/70 flex items-center justify-center z-[120] p-4`;
+            modal.innerHTML = `
+                <div onclick="event.target.remove()" class="absolute inset-0"></div>
+                <div onclick="event.stopImmediatePropagation()" class="glass border border-zinc-700 w-full max-w-md rounded-3xl p-7 relative">
+                    <div class="font-semibold text-xl mb-5">Create New Alert</div>
+                    
+                    <div class="space-y-5 text-sm">
+                        <div>
+                            <label class="block text-xs text-zinc-400 mb-1.5">TRIGGER TYPE</label>
+                            <select id="alert-type" class="w-full bg-zinc-900 border border-zinc-700 rounded-2xl px-4 py-3 text-sm">
+                                <option value="hashtag">Hashtag trends above threshold</option>
+                                <option value="cashtag">Cashtag reaches mention count</option>
+                                <option value="impressions">Post exceeds impressions</option>
+                                <option value="user">Specific account posts</option>
+                                <option value="keyword">Influencer mentions keyword</option>
+                            </select>
+                        </div>
+                        
+                        <div id="alert-dynamic-fields">
+                            <div>
+                                <label class="block text-xs text-zinc-400 mb-1.5">TAG / KEYWORD / HANDLE</label>
+                                <input id="alert-value" value="#Solana" class="w-full bg-zinc-900 border border-zinc-700 rounded-2xl px-4 py-3 text-sm">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-xs text-zinc-400 mb-1.5">CONDITION</label>
+                            <input id="alert-condition" value="mentions > 25,000" class="w-full bg-zinc-900 border border-zinc-700 rounded-2xl px-4 py-3 text-sm">
+                        </div>
+                        
+                        <div class="pt-2">
+                            <label class="block text-xs text-zinc-400 mb-1.5">NOTIFY ME VIA</label>
+                            <div class="flex gap-x-2">
+                                <div class="flex-1 text-center py-2 border border-emerald-400 bg-emerald-400/10 text-emerald-400 rounded-2xl text-xs">Email</div>
+                                <div class="flex-1 text-center py-2 border border-zinc-600 rounded-2xl text-xs">Push</div>
+                                <div class="flex-1 text-center py-2 border border-zinc-600 rounded-2xl text-xs">Telegram</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-x-3 mt-7">
+                        <button onclick="this.closest('.fixed').remove()" class="flex-1 py-3 text-sm border border-zinc-600 rounded-2xl">Cancel</button>
+                        <button onclick="createAlertFromModal(this)" class="flex-1 py-3 text-sm bg-white text-zinc-950 font-bold rounded-2xl">Create Alert</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+        
+        function createAlertFromModal(btn) {
+            const modal = btn.closest('.fixed');
+            const type = document.getElementById('alert-type').value;
+            const value = document.getElementById('alert-value').value.trim();
+            const condition = document.getElementById('alert-condition').value.trim();
+            
+            if (!value) {
+                showToast('Please enter a value', 'info');
+                return;
+            }
+            
+            const newAlert = {
+                id: Date.now(),
+                type: type,
+                value: value,
+                condition: condition,
+                active: true,
+                lastTriggered: 'Never'
+            };
+            
+            activeAlerts.unshift(newAlert);
+            saveToLocalStorage();
+            
+            modal.remove();
+            renderActiveAlerts();
+            showToast('Alert created successfully');
+            
+            // Simulate immediate trigger sometimes
+            if (Math.random() > 0.75) {
+                setTimeout(() => {
+                    showToast(`Alert triggered: ${value} ${condition}`, 'success');
+                    const badge = document.getElementById('notif-badge');
+                    if (badge) badge.textContent = parseInt(badge.textContent) + 1;
+                }, 4200);
+            }
+        }
+        
+        function renderActiveAlerts() {
+            const container = document.getElementById('active-alerts-list');
+            container.innerHTML = '';
+            document.getElementById('active-alerts-count').textContent = `(${activeAlerts.length})`;
+            
+            if (activeAlerts.length === 0) {
+                container.innerHTML = `<div class="text-center py-8 text-sm text-zinc-400">No active alerts. Create one above.</div>`;
+                return;
+            }
+            
+            activeAlerts.forEach((alert, idx) => {
+                const el = document.createElement('div');
+                el.className = `flex items-center justify-between px-4 py-3.5 bg-zinc-900 border border-zinc-700 rounded-2xl ${!alert.active ? 'opacity-60' : ''}`;
+                
+                el.innerHTML = `
+                    <div class="flex items-center gap-x-4">
+                        <div class="w-9 h-9 flex-shrink-0 rounded-2xl flex items-center justify-center text-lg ${alert.type === 'cashtag' || alert.type === 'hashtag' ? 'bg-emerald-400/10 text-emerald-400' : 'bg-violet-400/10 text-violet-400'}">
+                            <i class="fa-solid ${alert.type === 'cashtag' || alert.type === 'hashtag' ? 'fa-hashtag' : alert.type === 'user' ? 'fa-user' : 'fa-bell'}"></i>
+                        </div>
+                        <div>
+                            <div class="font-semibold">${alert.value} <span class="text-xs text-zinc-400 font-normal">• ${alert.condition}</span></div>
+                            <div class="text-xs text-zinc-400">Last triggered: ${alert.lastTriggered}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center gap-x-2">
+                        <button onclick="toggleAlert(${alert.id}, this)" class="px-4 py-1 text-xs border ${alert.active ? 'border-emerald-400 text-emerald-400' : 'border-zinc-600'} rounded-2xl">${alert.active ? 'Active' : 'Paused'}</button>
+                        <button onclick="deleteAlert(${alert.id}, this)" class="px-3 py-1 text-xs text-rose-400 hover:bg-rose-400/10 rounded-2xl">Delete</button>
+                    </div>
+                `;
+                container.appendChild(el);
+            });
+        }
+        
+        function toggleAlert(id, btn) {
+            const alert = activeAlerts.find(a => a.id === id);
+            if (!alert) return;
+            alert.active = !alert.active;
+            saveToLocalStorage();
+            renderActiveAlerts();
+        }
+        
+        function deleteAlert(id, btn) {
+            activeAlerts = activeAlerts.filter(a => a.id !== id);
+            saveToLocalStorage();
+            renderActiveAlerts();
+        }
+        
+        function showNotifications() {
+            const dropdown = document.createElement('div');
+            dropdown.className = `absolute right-6 top-[72px] w-80 glass border border-zinc-700 rounded-3xl shadow-2xl z-[130] overflow-hidden`;
+            
+            let html = `<div class="px-5 py-4 border-b border-zinc-700 font-semibold flex justify-between"><span>Notifications</span> <span onclick="this.closest('.absolute').remove()" class="cursor-pointer text-xs text-zinc-400">CLOSE</span></div>`;
+            
+            if (recentNotifications.length === 0) {
+                recentNotifications = [
+                    { id: 1, text: "$ANSEM hit 500k impressions", time: "14m ago", tag: "$ANSEM" },
+                    { id: 2, text: "#Solana trending in top 5", time: "1h ago", tag: "#Solana" },
+                    { id: 3, text: "@VitalikButerin posted about $ENS", time: "3h ago", tag: "@VitalikButerin" }
+                ];
+            }
+            
+            recentNotifications.forEach(n => {
+                html += `
+                    <div onclick="handleNotificationClick('${n.tag}', this)" class="px-5 py-[13px] hover:bg-zinc-800 cursor-pointer flex gap-x-3 text-sm border-b border-zinc-800 last:border-none">
+                        <div class="pt-1"><i class="fa-solid fa-bell text-cyan-400"></i></div>
+                        <div class="flex-1">
+                            <div>${n.text}</div>
+                            <div class="text-xs text-zinc-400">${n.time}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            dropdown.innerHTML = html;
+            document.body.appendChild(dropdown);
+            
+            // Auto close on outside click
+            setTimeout(() => {
+                document.addEventListener('click', function handler(ev) {
+                    if (!dropdown.contains(ev.target)) {
+                        dropdown.remove();
+                        document.removeEventListener('click', handler);
+                    }
+                }, { once: true });
+            }, 50);
+        }
+        
+        function handleNotificationClick(tag, el) {
+            el.closest('.absolute').remove();
+            document.getElementById('search-input').value = tag;
+            performSearch();
+        }
+
+        function renderHeatmap() {
+            const container = document.getElementById('heatmap-regions');
+            container.innerHTML = '';
+            
+            const regions = [
+                { name: "North America", activity: 92, top: "$BTC", posts: "4.2m", color: "emerald" },
+                { name: "Europe", activity: 78, top: "#AI", posts: "1.9m", color: "emerald" },
+                { name: "Asia", activity: 95, top: "$ANSEM", posts: "6.8m", color: "emerald" },
+                { name: "South America", activity: 41, top: "#Web3", posts: "620k", color: "amber" },
+                { name: "Africa", activity: 34, top: "#Crypto", posts: "410k", color: "amber" },
+                { name: "Oceania", activity: 27, top: "$SOL", posts: "280k", color: "zinc" }
+            ];
+            
+            regions.forEach(region => {
+                const card = document.createElement('div');
+                card.className = `glass border border-zinc-700 hover:border-zinc-400 transition-all p-5 rounded-3xl cursor-pointer`;
+                
+                const intensity = region.activity > 80 ? 'High' : region.activity > 50 ? 'Medium' : 'Low';
+                
+                card.innerHTML = `
+                    <div class="flex justify-between">
+                        <div>
+                            <div class="font-semibold">${region.name}</div>
+                            <div class="text-xs text-zinc-400 mt-px">${region.posts} posts today</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xs px-2.5 py-px rounded bg-${region.color}-400/10 text-${region.color}-400">${intensity}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-5">
+                        <div class="text-xs text-zinc-400 mb-1">Top tag</div>
+                        <div class="font-mono text-lg font-semibold text-emerald-400">${region.top}</div>
+                    </div>
+                    
+                    <div class="mt-4 h-px bg-zinc-700"></div>
+                    
+                    <div class="mt-3 flex justify-between items-end">
+                        <div class="text-xs">Activity score</div>
+                        <div class="font-mono text-xl font-bold">${region.activity}</div>
+                    </div>
+                `;
+                
+                card.onclick = () => {
+                    document.getElementById('search-input').value = region.top;
+                    performSearch();
+                };
+                
+                container.appendChild(card);
+            });
+        }
+
+        function renderCollections() {
+            const grid = document.getElementById('collections-grid');
+            grid.innerHTML = '';
+            
+            savedCollections.forEach((col, index) => {
+                const card = document.createElement('div');
+                card.className = `glass border border-zinc-700 rounded-3xl p-6`;
+                
+                let itemsHTML = '';
+                col.items.slice(0, 6).forEach(item => {
+                    itemsHTML += `<span onclick="quickLoadTag('${item}'); event.stopImmediatePropagation();" class="inline-block px-3 py-1 text-xs bg-zinc-800 hover:bg-zinc-700 transition rounded-2xl cursor-pointer mr-1.5 mb-1.5 font-mono">${item}</span>`;
+                });
+                
+                card.innerHTML = `
+                    <div class="flex justify-between mb-4">
+                        <div>
+                            <div class="font-semibold">${col.name}</div>
+                            <div class="text-xs text-zinc-400">${col.items.length} items • ${col.type}</div>
+                        </div>
+                        <button onclick="deleteCollection(${index}, event)" class="text-xs text-rose-400 px-2">Delete</button>
+                    </div>
+                    
+                    <div class="flex flex-wrap">${itemsHTML}</div>
+                    
+                    <div class="mt-5 pt-4 border-t border-zinc-700 text-xs flex justify-end">
+                        <button onclick="loadCollection(${index})" class="px-4 py-1.5 border border-zinc-600 hover:bg-zinc-800 rounded-2xl text-xs">Open collection</button>
+                    </div>
+                `;
+                
+                grid.appendChild(card);
+            });
+        }
+        
+        function quickLoadTag(tag) {
+            document.getElementById('search-input').value = tag;
+            performSearch();
+        }
+        
+        function loadCollection(index) {
+            const col = savedCollections[index];
+            if (!col || !col.items.length) return;
+            
+            // Load first item
+            document.getElementById('search-input').value = col.items[0];
+            performSearch();
+            
+            showToast(`Loaded ${col.name}`);
+        }
+        
+        function deleteCollection(index, ev) {
+            ev.stopImmediatePropagation();
+            if (confirm('Delete this collection?')) {
+                savedCollections.splice(index, 1);
+                saveToLocalStorage();
+                renderCollections();
+            }
+        }
+        
+        function showCreateCollectionModal() {
+            const name = prompt('Collection name:', 'My New Watchlist');
+            if (!name) return;
+            
+            savedCollections.push({
+                id: Date.now(),
+                name: name,
+                type: 'tags',
+                items: []
+            });
+            
+            saveToLocalStorage();
+            renderCollections();
+        }
+        
+        function addCurrentTagToCollections() {
+            if (!currentTag) return;
+            
+            // Add to first collection or create
+            if (savedCollections.length === 0) {
+                savedCollections.push({ id: Date.now(), name: "Default Watchlist", type: "tags", items: [currentTag] });
+            } else {
+                const tagsCol = savedCollections.find(c => c.type === 'tags') || savedCollections[0];
+                if (!tagsCol.items.includes(currentTag)) {
+                    tagsCol.items.push(currentTag);
+                }
+            }
+            
+            saveToLocalStorage();
+            showToast(`${currentTag} saved to collections`);
+            
+            // If open, refresh
+            if (!document.getElementById('view-collections').classList.contains('hidden')) {
+                renderCollections();
+            }
+        }
+
+        function testAPI() {
+            const input = document.getElementById('api-test-input').value.trim() || '$ANSEM';
+            const pre = document.getElementById('api-response');
+            pre.classList.remove('hidden');
+            pre.innerHTML = 'Loading...';
+            
+            setTimeout(() => {
+                const fakeResponse = {
+                    tag: input,
+                    timestamp: new Date().toISOString(),
+                    stats: {
+                        posts_24h: Math.floor(Math.random() * 420000) + 18000,
+                        impressions: Math.floor(Math.random() * 8200000000) + 120000000,
+                        avg_engagement: (3.4 + Math.random() * 5).toFixed(2),
+                        unique_accounts: Math.floor(Math.random() * 82000) + 12400
+                    },
+                    sentiment: { positive: 68, neutral: 24, negative: 8 },
+                    top_posts: currentLeaderboardPosts ? currentLeaderboardPosts.slice(0,3).map(p => ({ handle: p.handle, impressions: p.impressions })) : []
+                };
+                
+                pre.innerHTML = JSON.stringify(fakeResponse, null, 2);
+            }, 680);
+        }
+
+        // Tag detail modal functions
+        let currentModalTag = '';
+        let currentModalTab = 0;
+        let modalCharts = {};
+
+        function showTagDetail(tag) {
+            currentModalTag = tag;
+            currentTagData = {
+                mentions: Math.floor(Math.random() * 420000) + 45000,
+                impressions: Math.floor(Math.random() * 5200000000) + 340000000,
+                engagement: (3.8 + Math.random() * 4.2).toFixed(2),
+                accounts: Math.floor(Math.random() * 124000) + 8200
+            };
+            
+            const modal = document.getElementById('tag-detail-modal');
+            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
+            
+            // Header pill
+            const pill = document.getElementById('modal-tag-pill');
+            pill.innerHTML = tag;
+            pill.className = `px-6 py-1.5 text-xl font-bold rounded-2xl ${tag.startsWith('$') ? 'bg-emerald-400/10 text-emerald-400 border border-emerald-400/30' : 'bg-violet-400/10 text-violet-400 border border-violet-400/30'}`;
+            
+            // Stats line
+            document.getElementById('modal-stats').innerHTML = `
+                <span class="font-mono">${formatNumber(currentTagData.mentions)} posts</span> 
+                <span class="mx-2">•</span> 
+                <span class="font-mono">${formatNumber(currentTagData.impressions)} impressions</span>
+            `;
+            
+            // Populate overview tab by default
+            populateTagOverview();
+            
+            // Default to tab 0
+            switchTagTab(0);
+        }
+        
+        function populateTagOverview() {
+            document.getElementById('modal-mentions').textContent = formatNumber(currentTagData.mentions);
+            document.getElementById('modal-impressions').textContent = formatNumber(currentTagData.impressions);
+            document.getElementById('modal-engagement').textContent = currentTagData.engagement + '%';
+            document.getElementById('modal-accounts').textContent = formatNumber(currentTagData.accounts);
+            
+            // AI Summary
+            const summaries = {
+                '$ANSEM': "The $ANSEM narrative has shifted from pure meme to a serious community play with strong holder conviction. Discussions center around upcoming utility announcements and CEX listings. High engagement from mid-tier influencers.",
+                '$BTC': "Bitcoin remains the dominant narrative with ETF flows and macro correlation driving conversation. Institutional interest remains high while retail shows signs of FOMO returning.",
+                '#Solana': "Solana ecosystem continues its strong momentum with new DeFi protocols and meme coin activity. Developers are shipping at a rapid pace. Community sentiment extremely bullish on scaling narrative."
+            };
+            
+            document.getElementById('ai-summary').innerHTML = summaries[currentModalTag] || 
+                `Strong organic conversation around ${currentModalTag}. Mix of price discussion, community building and project updates. High signal-to-noise ratio with many verified accounts participating.`;
+            
+            // Sentiment
+            const pos = 64 + Math.floor(Math.random() * 18);
+            const neu = 100 - pos - Math.floor(Math.random() * 9);
+            const neg = 100 - pos - neu;
+            
+            document.getElementById('sent-pos').textContent = pos + '%';
+            document.getElementById('sent-neu').textContent = neu + '%';
+            document.getElementById('sent-neg').textContent = neg + '%';
+            
+            document.getElementById('sent-pos-bar').style.width = pos + '%';
+            document.getElementById('sent-neu-bar').style.width = neu + '%';
+            document.getElementById('sent-neg-bar').style.width = neg + '%';
+            
+            // Prediction
+            const willTrend = Math.random() > 0.35;
+            document.getElementById('prediction-text').innerHTML = willTrend ? 
+                `<span class="text-emerald-400">Likely to trend higher</span>` : 
+                `<span class="text-amber-400">Steady / slight pullback</span>`;
+            document.getElementById('prediction-confidence').textContent = willTrend ? '81%' : '64%';
+            
+            // Scores
+            document.getElementById('spam-score').textContent = (8 + Math.floor(Math.random()*11));
+            document.getElementById('influencer-score').textContent = (71 + Math.floor(Math.random()*19));
+            document.getElementById('virality-score').textContent = (78 + Math.floor(Math.random()*14));
+        }
+        
+        function switchTagTab(tabIndex) {
+            // Hide all tabs
+            for (let i = 0; i < 5; i++) {
+                const tab = document.getElementById('tag-tab-' + i);
+                if (tab) tab.classList.add('hidden');
+            }
+            
+            // Show selected
+            document.getElementById('tag-tab-' + tabIndex).classList.remove('hidden');
+            
+            // Update tab styles
+            document.querySelectorAll('.tag-tab').forEach((t, idx) => {
+                if (parseInt(t.dataset.tab) === tabIndex) {
+                    t.classList.add('border-b-2', 'border-cyan-400', 'text-cyan-400');
+                    t.classList.remove('text-zinc-300');
+                } else {
+                    t.classList.remove('border-b-2', 'border-cyan-400', 'text-cyan-400');
+                    t.classList.add('text-zinc-300');
+                }
+            });
+            
+            currentModalTab = tabIndex;
+            
+            // Lazy load content
+            if (tabIndex === 1 && document.getElementById('modal-leaderboard-body').children.length === 0) {
+                renderModalLeaderboard();
+            }
+            
+            if (tabIndex === 2 && document.getElementById('modal-influencers-grid').children.length === 0) {
+                renderModalInfluencers();
+            }
+            
+            if (tabIndex === 3) {
+                setTimeout(() => {
+                    renderModalCharts();
+                }, 80);
+            }
+        }
+        
+        function renderModalLeaderboard() {
+            const container = document.getElementById('modal-leaderboard-body');
+            container.innerHTML = '';
+            
+            const posts = currentLeaderboardPosts.length > 0 ? currentLeaderboardPosts.slice(0, 6) : generateMockPostsForTag(currentModalTag, 6);
+            
+            posts.forEach((post, idx) => {
+                const el = document.createElement('div');
+                el.className = `flex gap-x-4 p-4 bg-zinc-900 border border-zinc-700 rounded-2xl cursor-pointer`;
+                el.innerHTML = `
+                    <div class="font-mono text-xs w-5 text-zinc-400 pt-1">${idx + 1}</div>
+                    <div class="flex-1">
+                        <div class="flex items-center gap-x-2 mb-1">
+                            <span class="font-semibold">${post.username}</span>
+                            <span class="font-mono text-xs text-zinc-400">@${post.handle}</span>
+                        </div>
+                        <div class="text-sm">${post.text}</div>
+                        <div class="flex gap-x-5 mt-3 text-xs">
+                            <span class="text-emerald-400">${formatNumber(post.impressions)} imp</span>
+                            <span>${formatNumber(post.likes)} likes</span>
+                            <span>${formatNumber(post.reposts)} reposts</span>
+                        </div>
+                    </div>
+                `;
+                el.onclick = () => {
+                    closeTagModal();
+                    setTimeout(() => showPostModalFromData(post), 180);
+                };
+                container.appendChild(el);
+            });
+        }
+        
+        function renderModalInfluencers() {
+            const container = document.getElementById('modal-influencers-grid');
+            container.innerHTML = '';
+            
+            const topInfluencers = [...mockInfluencers].sort((a,b) => b.engagement - a.engagement).slice(0, 4);
+            
+            topInfluencers.forEach(inf => {
+                const card = document.createElement('div');
+                card.className = `flex gap-x-3 p-3 bg-zinc-900 border border-zinc-700 rounded-2xl cursor-pointer`;
+                card.innerHTML = `
+                    <img src="${inf.avatar}" class="w-10 h-10 rounded-2xl flex-shrink-0" />
+                    <div class="flex-1 min-w-0">
+                        <div class="font-semibold flex items-center gap-x-1">${inf.name} ${inf.verified ? '<i class="fa-solid fa-check-circle text-xs text-cyan-400"></i>' : ''}</div>
+                        <div class="text-xs text-zinc-400">@${inf.handle}</div>
+                        <div class="text-xs mt-2 flex gap-x-3"><span class="text-emerald-400">${inf.engagement}%</span> <span class="text-zinc-400">${formatNumber(inf.followers)} followers</span></div>
+                    </div>
+                `;
+                card.onclick = () => {
+                    closeTagModal();
+                    setTimeout(() => analyzeSpecificUser(inf.handle), 220);
+                };
+                container.appendChild(card);
+            });
+        }
+        
+        function renderModalCharts() {
+            // Mentions chart
+            const mentionsCanvas = document.getElementById('modal-mentions-chart');
+            if (modalCharts.mentions) modalCharts.mentions.destroy();
+            
+            modalCharts.mentions = new Chart(mentionsCanvas, {
+                type: 'bar',
+                data: {
+                    labels: ['6d ago', '5d ago', '4d ago', '3d ago', '2d ago', 'Yesterday', 'Today'],
+                    datasets: [{
+                        label: 'Mentions',
+                        data: [12400, 18900, 32100, 28700, 45200, 78400, currentTagData ? currentTagData.mentions / 6 : 52000],
+                        backgroundColor: '#67f6ff'
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid: { color: '#27272a' } }, x: { grid: { color: '#27272a' } } } }
+            });
+            
+            // Engagement chart
+            const engCanvas = document.getElementById('modal-engagement-chart');
+            if (modalCharts.engagement) modalCharts.engagement.destroy();
+            
+            modalCharts.engagement = new Chart(engCanvas, {
+                type: 'line',
+                data: {
+                    labels: ['6d ago', '5d ago', '4d ago', '3d ago', '2d ago', 'Yesterday', 'Today'],
+                    datasets: [{
+                        label: 'Engagement %',
+                        data: [3.1, 3.8, 4.2, 5.1, 4.7, 5.9, parseFloat(currentTagData ? currentTagData.engagement : '5.4')],
+                        borderColor: '#f472b6',
+                        tension: 0.3,
+                        borderWidth: 3
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid: { color: '#27272a' } }, x: { grid: { color: '#27272a' } } } }
+            });
+        }
+        
+        function regenerateAISummary() {
+            const el = document.getElementById('ai-summary');
+            el.style.transition = 'opacity .2s';
+            el.style.opacity = '0.3';
+            
+            setTimeout(() => {
+                el.innerHTML = `Updated analysis: The conversation around ${currentModalTag} remains highly engaged with strong community conviction. New developments in the last 12 hours have driven a fresh wave of discussion from high-quality accounts. Momentum indicators are positive.`;
+                el.style.opacity = '1';
+            }, 420);
+        }
+        
+        function closeTagModal() {
+            const modal = document.getElementById('tag-detail-modal');
+            modal.style.display = 'none';
+            modal.classList.add('hidden');
+            
+            // Cleanup charts
+            if (modalCharts.mentions) { modalCharts.mentions.destroy(); modalCharts.mentions = null; }
+            if (modalCharts.engagement) { modalCharts.engagement.destroy(); modalCharts.engagement = null; }
+        }
+
+        function showPostModalFromData(post) {
+            // Simple post modal
+            const modal = document.createElement('div');
+            modal.className = `fixed inset-0 bg-black/80 z-[130] flex items-center justify-center p-6`;
+            modal.innerHTML = `
+                <div onclick="event.target.remove()" class="absolute inset-0"></div>
+                <div onclick="event.stopImmediatePropagation()" class="glass border border-zinc-700 max-w-2xl w-full rounded-3xl overflow-hidden relative">
+                    <div class="px-8 pt-7 pb-5">
+                        <div class="flex justify-between">
+                            <div class="flex gap-x-4">
+                                <img src="${post.avatar}" class="w-12 h-12 rounded-2xl" />
+                                <div>
+                                    <div class="font-bold flex items-center">${post.username} ${post.verified ? '<i class="fa-solid fa-check-circle text-cyan-400 ml-1.5"></i>' : ''}</div>
+                                    <div class="font-mono text-sm text-zinc-400">@${post.handle} • ${formatTimeAgo(post.timestamp)}</div>
+                                </div>
+                            </div>
+                            <div class="text-right text-xs">
+                                <div class="font-mono text-emerald-400">${formatNumber(post.impressions)}</div>
+                                <div class="text-zinc-400">impressions</div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6 text-[15.5px] leading-relaxed">${post.text}</div>
+                        
+                        <div class="mt-7 pt-5 border-t border-zinc-700 flex gap-x-8 text-sm">
+                            <div><span class="font-bold">${formatNumber(post.likes)}</span> <span class="text-xs text-zinc-400">likes</span></div>
+                            <div><span class="font-bold">${formatNumber(post.reposts)}</span> <span class="text-xs text-zinc-400">reposts</span></div>
+                            <div><span class="font-bold">${formatNumber(post.replies)}</span> <span class="text-xs text-zinc-400">replies</span></div>
+                            <div><span class="font-bold">${formatNumber(post.bookmarks)}</span> <span class="text-xs text-zinc-400">bookmarks</span></div>
+                        </div>
+                    </div>
+                    
+                    <div class="px-8 py-4 border-t border-zinc-700 bg-zinc-900 flex gap-x-3">
+                        <button onclick="this.closest('.fixed').remove(); analyzeSpecificUser('${post.handle}')" class="flex-1 py-3 text-sm border border-zinc-600 rounded-2xl">View @${post.handle} Analytics</button>
+                        <button onclick="this.closest('.fixed').remove()" class="flex-1 py-3 text-sm bg-white text-zinc-950 font-bold rounded-2xl">Close</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+        
+        function showPostModal(index) {
+            // For overview top viral post
+            const posts = generateMockPostsForTag('$ANSEM', 1);
+            showPostModalFromData(posts[0]);
+        }
+
+        function showUserMenu() {
+            const menu = document.createElement('div');
+            menu.className = `absolute right-6 top-[72px] w-60 glass border border-zinc-700 rounded-3xl py-2 z-[130] text-sm shadow-2xl`;
+            menu.innerHTML = `
+                <div class="px-5 py-3 border-b border-zinc-700">
+                    <div class="font-semibold">Eagle Wagmi</div>
+                    <div class="text-xs text-emerald-400">@eagle_wagmi • Lagos, NG</div>
+                </div>
+                
+                <div class="py-1">
+                    <div onclick="switchView('user-analytics'); this.closest('.absolute').remove();" class="px-5 py-[9px] hover:bg-zinc-800 cursor-pointer flex items-center gap-x-3"><i class="fa-solid fa-user w-4"></i> <span>Your Analytics</span></div>
+                    <div onclick="switchView('collections'); this.closest('.absolute').remove();" class="px-5 py-[9px] hover:bg-zinc-800 cursor-pointer flex items-center gap-x-3"><i class="fa-solid fa-bookmark w-4"></i> <span>Collections</span></div>
+                    <div onclick="showUpgradeModal(); this.closest('.absolute').remove();" class="px-5 py-[9px] hover:bg-zinc-800 cursor-pointer flex items-center gap-x-3"><i class="fa-solid fa-rocket w-4 text-cyan-400"></i> <span class="text-cyan-400">Upgrade to Pro</span></div>
+                </div>
+                
+                <div class="border-t border-zinc-700 pt-1">
+                    <div onclick="simulateLogout(this)" class="px-5 py-[9px] hover:bg-zinc-800 cursor-pointer flex items-center gap-x-3 text-rose-400"><i class="fa-solid fa-sign-out-alt w-4"></i> <span>Sign out</span></div>
+                </div>
+            `;
+            document.body.appendChild(menu);
+            
+            setTimeout(() => {
+                document.addEventListener('click', function h(ev) {
+                    if (!menu.contains(ev.target)) {
+                        menu.remove();
+                        document.removeEventListener('click', h);
+                    }
+                }, {once: true});
+            }, 30);
+        }
+        
+        function simulateLogout(el) {
+            el.closest('.absolute').remove();
+            showToast('Logged out successfully');
+            setTimeout(() => {
+                location.reload();
+            }, 900);
+        }
+
+        function showUpgradeModal() {
+            const modal = document.createElement('div');
+            modal.className = `fixed inset-0 bg-black/80 flex items-center justify-center z-[140] p-6`;
+            modal.innerHTML = `
+                <div onclick="event.target.remove()" class="absolute inset-0"></div>
+                <div onclick="event.stopImmediatePropagation()" class="glass border border-zinc-700 w-full max-w-lg rounded-3xl overflow-hidden">
+                    <div class="px-8 pt-8 pb-6 text-center">
+                        <div class="mx-auto w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-400 to-indigo-500 flex items-center justify-center mb-5">
+                            <i class="fa-solid fa-rocket text-white text-3xl"></i>
+                        </div>
+                        <div class="text-3xl font-semibold tracking-tight">Unlock Pro</div>
+                        <div class="text-zinc-400 mt-1">Everything you need for serious trend analysis</div>
+                        
+                        <div class="mt-7 grid grid-cols-2 gap-3 text-left text-sm">
+                            <div class="flex gap-x-3"><i class="fa-solid fa-check text-emerald-400 mt-1"></i> <span>Unlimited searches &amp; history</span></div>
+                            <div class="flex gap-x-3"><i class="fa-solid fa-check text-emerald-400 mt-1"></i> <span>CSV &amp; API exports</span></div>
+                            <div class="flex gap-x-3"><i class="fa-solid fa-check text-emerald-400 mt-1"></i> <span>Advanced AI reports</span></div>
+                            <div class="flex gap-x-3"><i class="fa-solid fa-check text-emerald-400 mt-1"></i> <span>Unlimited alerts + webhooks</span></div>
+                            <div class="flex gap-x-3"><i class="fa-solid fa-check text-emerald-400 mt-1"></i> <span>Competitor &amp; portfolio tracking</span></div>
+                            <div class="flex gap-x-3"><i class="fa-solid fa-check text-emerald-400 mt-1"></i> <span>Priority real-time data</span></div>
+                        </div>
+                        
+                        <div class="mt-8">
+                            <div class="text-xs text-zinc-400">Starting at</div>
+                            <div class="text-5xl font-semibold">$49 <span class="text-base align-super text-zinc-400">/mo</span></div>
+                        </div>
+                    </div>
+                    
+                    <div class="px-8 pb-8 flex gap-x-3">
+                        <button onclick="this.closest('.fixed').remove()" class="flex-1 py-3.5 border border-zinc-600 rounded-2xl text-sm">Maybe later</button>
+                        <button onclick="upgradeToPro(this)" class="flex-1 py-3.5 bg-white text-zinc-950 font-bold rounded-2xl text-sm">Start 14-day free trial</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+        
+        function upgradeToPro(btn) {
+            btn.closest('.fixed').remove();
+            showToast('Welcome to Pro! All premium features unlocked for this session.');
+            
+            // Unlock some pro indicators
+            setTimeout(() => {
+                document.querySelectorAll('.pro-badge').forEach(b => b.style.display = 'inline-flex');
+            }, 600);
+        }
+
+        function refreshAllData() {
+            showToast('Refreshing live data...');
+            
+            // Re-render various parts
+            if (!document.getElementById('view-overview').classList.contains('hidden')) {
+                renderQuickTrending();
+            }
+            
+            if (!document.getElementById('view-trending').classList.contains('hidden')) {
+                document.getElementById('trending-cashtags-grid').innerHTML = '';
+                document.getElementById('trending-hashtags-list').innerHTML = '';
+                document.getElementById('fastest-growing-list').innerHTML = '';
+                document.getElementById('viral-posts-grid').innerHTML = '';
+                renderTrendingDashboard();
+            }
+            
+            if (currentLeaderboardPosts.length > 0 && !document.getElementById('view-search').classList.contains('hidden')) {
+                currentLeaderboardPosts = generateMockPostsForTag(currentTag, 16);
+                renderLeaderboardTable(currentLeaderboardPosts);
+            }
+            
+            setTimeout(() => {
+                showToast('Data refreshed');
+            }, 650);
+        }
+        
+        function refreshTrending() {
+            const grid = document.getElementById('trending-cashtags-grid');
+            grid.style.transition = 'opacity .2s';
+            grid.style.opacity = '0.4';
+            
+            setTimeout(() => {
+                grid.innerHTML = '';
+                renderTrendingDashboard();
+                grid.style.opacity = '1';
+            }, 280);
+        }
+
+        function updateFollowerSlider() {
+            // Already handled via oninput in HTML
+        }
+
+        function initGlobalSearch() {
+            const globalSearch = document.getElementById('global-search');
+            
+            globalSearch.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    const val = globalSearch.value.trim();
+                    if (val) {
+                        document.getElementById('search-input').value = val;
+                        performSearch();
+                        globalSearch.value = '';
+                    }
+                }
+            });
+            
+            // Also allow clicking search icon area but since it's input, ok.
+        }
+        
+        function initSliders() {
+            // The oninput is inline in HTML for simplicity
+            const followersSlider = document.getElementById('followers-slider');
+            if (followersSlider) {
+                followersSlider.oninput = updateDiscoveryFilters;
+            }
+        }
+
+        function initSortButtons() {
+            // Set initial active sort button
+            setTimeout(() => {
+                const firstBtn = document.querySelector('.sort-btn[data-sort="impressions"]');
+                if (firstBtn) firstBtn.classList.add('active', 'bg-zinc-700', 'text-white');
+            }, 300);
+        }
+
+        function initKeyboardShortcuts() {
+            document.addEventListener('keydown', function(e) {
+                if (e.key === '/' && document.activeElement.tagName === 'BODY') {
+                    e.preventDefault();
+                    const search = document.getElementById('search-input');
+                    if (search) {
+                        switchView('search');
+                        search.focus();
+                        search.select();
+                    }
+                }
+                
+                if (e.key.toLowerCase() === 'escape') {
+                    const modals = document.querySelectorAll('.fixed.inset-0');
+                    if (modals.length > 0) {
+                        modals[modals.length-1].remove();
+                    } else if (!document.getElementById('tag-detail-modal').classList.contains('hidden')) {
+                        closeTagModal();
+                    }
+                }
+            });
+            
+            // Easter egg: konami or just note
+            console.log('%c[TrendScope] Press "/" to focus search from anywhere', 'color:#3f3f46');
+        }
+
+        function initializeEverything() {
+            initTailwind();
+            loadFromLocalStorage();
+            
+            // Initial renders
+            renderQuickTrending();
+            
+            // Seed some initial search results for demo purposes
+            setTimeout(() => {
+                const searchInput = document.getElementById('search-input');
+                if (searchInput && searchInput.value === '$ANSEM') {
+                    // Auto load $ANSEM on first visit for impressive demo
+                    currentTag = '$ANSEM';
+                    currentLeaderboardPosts = generateMockPostsForTag('$ANSEM', 14);
+                    
+                    // Only show results if user is still on overview or we decide to auto-switch
+                    // For better UX, don't auto switch. User can click analyze.
+                }
+            }, 800);
+            
+            // Show overview by default
+            document.getElementById('view-overview').classList.remove('hidden');
+            
+            // Initialize other things
+            initGlobalSearch();
+            initSliders();
+            initSortButtons();
+            initKeyboardShortcuts();
+            
+            // Make category pills interactive in trending (they have onclick already)
+            
+            // Welcome toast for returning user
+            setTimeout(() => {
+                // Only show once per session
+                if (!sessionStorage.getItem('trendscope_welcomed')) {
+                    // showToast('Welcome back, Eagle. Your watchlist has 3 new mentions.');
+                    sessionStorage.setItem('trendscope_welcomed', 'true');
+                }
+            }, 5200);
+            
+            // Demo: occasionally update live counter
+            setInterval(() => {
+                const liveEls = document.querySelectorAll('.animate-pulse');
+                if (liveEls.length && Math.random() > 0.7) {
+                    // subtle pulse effect already there
+                }
+            }, 14000);
+            
+            // Make sure lucide icons render if used (we mostly used font-awesome)
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+            
+            console.log('%c[TrendScope] SaaS platform initialized successfully', 'color:#22d3ee');
+        }
+
+        // Boot the app
+        window.onload = initializeEverything;
+        
+        // Expose some functions for console debugging if needed
+        window.TrendScope = { performSearch, switchView, showTagDetail };
+    </script>
+</body>
+</html>
